@@ -110,6 +110,12 @@ app.get('/api/stats/recap', async (req: Request, res: Response) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+// Export app for Vercel Serverless Functions
+export default app;
+
+// Only listen if running locally (not in serverless environment)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
+}
