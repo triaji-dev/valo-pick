@@ -18,6 +18,14 @@ interface Agent {
   displayIcon: string;
   fullPortrait?: string;
   role?: AgentRole;
+  isPlayableCharacter?: boolean; // Ensure we only get playable char
+}
+
+interface Weapon {
+  uuid: string;
+  displayName: string;
+  displayIcon: string;
+  category: string; // e.g., "EEquippableCategory::Rifle"
 }
 
 // --- Constants & Fallback Data ---
@@ -39,13 +47,15 @@ const FALLBACK_AGENTS: Agent[] = [
 export default function App() {
   // --- State ---
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [weapons, setWeapons] = useState<Weapon[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<'agent' | 'weapon'>('agent');
   // const [error, setError] = useState<string | null>(null);
   
   // Configuration
   const [playerCount, setPlayerCount] = useState(5);
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Duelist', 'Initiator', 'Controller', 'Sentinel']);
-  const [gameMode, setGameMode] = useState<'full' | 'balance'>('full');
+  const [gameMode, setGameMode] = useState<'full' | 'balance'>('balance');
   const [excludedAgentIds, setExcludedAgentIds] = useState<Set<string>>(new Set());
   const [playerNames, setPlayerNames] = useState<string[]>(['', '', '', '', '']); // Store custom player names
   
@@ -81,7 +91,20 @@ export default function App() {
         setLoading(false);
       }
     };
-    fetchAgents();
+
+    const fetchWeapons = async () => {
+      try {
+        const response = await fetch('https://valorant-api.com/v1/weapons');
+        const data = await response.json();
+        if (data.status === 200) {
+           setWeapons(data.data);
+        }
+      } catch (err) {
+         console.error("Failed to fetch weapons", err);
+      }
+    };
+
+    Promise.all([fetchAgents(), fetchWeapons()]).finally(() => setLoading(false));
   }, []);
 
   // --- Filtering Logic ---
@@ -122,7 +145,7 @@ export default function App() {
   const resetApp = () => {
     setPlayerCount(5);
     setSelectedRoles(['Duelist', 'Initiator', 'Controller', 'Sentinel']);
-    setGameMode('full');
+    setGameMode('balance');
     setExcludedAgentIds(new Set());
     setPlayerNames(['', '', '', '', '']);
     setRollResults(Array(5).fill(null));
@@ -162,15 +185,15 @@ export default function App() {
     
     if (gameMode === 'balance' && playerCount >= 4) {
        // --- BALANCE MODE LOGIC ---
-       // 1. Bucket available agents by role
+       const REQUIRED_ROLES = ['Duelist', 'Initiator', 'Controller', 'Sentinel'];
+       
+       // 1. Bucket ALL agents by role (ignoring exclusions for now)
        const roleBuckets: Record<string, Agent[]> = {
          Duelist: [], Initiator: [], Controller: [], Sentinel: []
        };
-       // In Balance Mode, we ignore role filters to ensure fairness, but respect exclusions
-       const balancePool = agents.filter(a => !excludedAgentIds.has(a.uuid));
        
-       balancePool.forEach(a => {
-         if (a.role?.displayName && roleBuckets[a.role.displayName]) {
+       agents.forEach(a => {
+         if (a.role?.displayName && REQUIRED_ROLES.includes(a.role.displayName)) {
            roleBuckets[a.role.displayName].push(a);
          }
        });
@@ -179,26 +202,42 @@ export default function App() {
        const forcedPicks: Agent[] = [];
        const usedAgentIds = new Set<string>();
 
-       Object.keys(roleBuckets).forEach(role => {
-          const agentsInRole = roleBuckets[role];
-          if (agentsInRole.length > 0) {
-            const pick = agentsInRole[Math.floor(Math.random() * agentsInRole.length)];
+       REQUIRED_ROLES.forEach(role => {
+          const allAgentsInRole = roleBuckets[role];
+          
+          if (allAgentsInRole.length > 0) {
+            // Try to find non-excluded agents first
+            const validCandidates = allAgentsInRole.filter(a => !excludedAgentIds.has(a.uuid));
+            
+            let pick: Agent;
+            
+            if (validCandidates.length > 0) {
+               // Normal case: Pick from non-excluded
+               pick = validCandidates[Math.floor(Math.random() * validCandidates.length)];
+            } else {
+               // Fallback case: All agents of this role are excluded, but we MUST fulfill the role.
+               // Pick from all agents in this role (Override ban)
+               pick = allAgentsInRole[Math.floor(Math.random() * allAgentsInRole.length)];
+            }
+            
             forcedPicks.push(pick);
             usedAgentIds.add(pick.uuid);
           }
        });
 
        // 3. Fill the rest if size > 4
-       const remainingSlots = playerCount - forcedPicks.length;
-       const remainingPool = balancePool.filter(a => !usedAgentIds.has(a.uuid));
+       const remainingSlots = Math.max(0, playerCount - forcedPicks.length);
+       
+       // For filling, we strictly respect exclusions unless we run out of agents (unlikely)
+       const poolForFillers = agents.filter(a => !excludedAgentIds.has(a.uuid) && !usedAgentIds.has(a.uuid));
        
        // Shuffle remaining pool
-       for (let i = remainingPool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [remainingPool[i], remainingPool[j]] = [remainingPool[j], remainingPool[i]];
+       for (let i = poolForFillers.length - 1; i > 0; i--) {
+         const j = Math.floor(Math.random() * (i + 1));
+         [poolForFillers[i], poolForFillers[j]] = [poolForFillers[j], poolForFillers[i]];
        }
        
-       const fillers = remainingPool.slice(0, remainingSlots);
+       const fillers = poolForFillers.slice(0, remainingSlots);
        finalPool = [...forcedPicks, ...fillers];
 
        // Shuffle the combined result so roles aren't always in first 4 slots
@@ -302,13 +341,45 @@ export default function App() {
         </div>
       </header>
 
+      {/* Navigation */}
+      <nav className="w-full bg-[#1c252e] border-b border-gray-700">
+        <div className="max-w-6xl mx-auto flex">
+          <button
+            onClick={() => !isRolling && setCurrentView('agent')}
+            disabled={isRolling}
+            className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${
+              currentView === 'agent'
+                ? 'border-[#FF4655] text-white bg-white/5'
+                : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            Pick Agent
+          </button>
+          <button
+             onClick={() => !isRolling && setCurrentView('weapon')}
+             disabled={isRolling}
+             className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${
+              currentView === 'weapon'
+                ? 'border-[#FF4655] text-white bg-white/5'
+                : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            Pick Weapon
+          </button>
+        </div>
+      </nav>
+
       <main className="flex-1 w-full max-w-6xl p-4 md:p-8 flex flex-col gap-8">
         
-        {/* --- Top Section: Config --- */}
-        <section className="bg-[#1c252e] border border-gray-700 rounded-lg p-6 shadow-xl relative overflow-hidden">
-          {/* Decorative Background Elements */}
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-            <Crosshair size={200} />
+        {currentView === 'agent' ? (
+          <>
+            {/* --- Top Section: Config (AGENT) --- */}
+        <section className="bg-[#1c252e] border border-gray-700 rounded-lg p-6 shadow-xl relative">
+          {/* Decorative Background Elements - Wrapped to prevent tooltip clipping */}
+          <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
+              <div className="absolute top-0 right-0 p-4 opacity-5">
+                <Crosshair size={200} />
+              </div>
           </div>
 
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -342,21 +413,6 @@ export default function App() {
                 <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 block">Mode</label>
                 <div className="flex bg-[#0F1923] p-1 rounded border border-gray-700">
                   <button
-                    onClick={() => !isRolling && setGameMode('full')}
-                    disabled={isRolling}
-                    className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
-                      gameMode === 'full'
-                        ? 'bg-[#FF4655] text-white shadow-lg'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    Full Random
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
-                      Random agents from the pool
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
-                    </div>
-                  </button>
-                  <button
                     onClick={() => !isRolling && playerCount >= 4 && setGameMode('balance')}
                     disabled={isRolling || playerCount < 4}
                     className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
@@ -368,6 +424,21 @@ export default function App() {
                     Balance
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
                       {playerCount < 4 ? "Requires Squad Size 4+" : "1 Duelist, 1 Initiator, 1 Controller, 1 Sentinel guaranteed"}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => !isRolling && setGameMode('full')}
+                    disabled={isRolling}
+                    className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
+                      gameMode === 'full'
+                        ? 'bg-[#FF4655] text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    Full Random
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
+                      Random agents from the pool
                       <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
                     </div>
                   </button>
@@ -580,6 +651,11 @@ export default function App() {
           </div>
         </section>
 
+          </>
+        ) : (
+           /* --- WEAPON PICKER VIEW --- */
+           <WeaponRandomizer weapons={weapons} isRolling={isRolling} setIsRolling={setIsRolling} />
+        )}
       </main>
 
       {/* Footer */}
@@ -601,3 +677,131 @@ export default function App() {
     </div>
   );
 }
+
+const WEAPON_CATEGORIES = {
+  'Pistol': 'EEquippableCategory::Sidearm',
+  'SMG': 'EEquippableCategory::SMG',
+  'Shotgun': 'EEquippableCategory::Shotgun',
+  'Rifle': 'EEquippableCategory::Rifle',
+  'Sniper': 'EEquippableCategory::Sniper',
+  'Heavy': 'EEquippableCategory::Heavy',
+};
+
+// --- Sub-Component: Weapon Randomizer ---
+function WeaponRandomizer({ weapons, isRolling, setIsRolling }: { weapons: Weapon[], isRolling: boolean, setIsRolling: (v: boolean) => void }) {
+    const [result, setResult] = useState<Weapon | null>(null);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>(Object.keys(WEAPON_CATEGORIES));
+
+    const toggleCategory = (cat: string) => {
+      setSelectedCategories(prev => 
+        prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+      );
+    };
+
+    const getFilteredWeapons = () => {
+      return weapons.filter(w => {
+        const catName = Object.keys(WEAPON_CATEGORIES).find(key => WEAPON_CATEGORIES[key as keyof typeof WEAPON_CATEGORIES] === w.category);
+        return catName && selectedCategories.includes(catName);
+      });
+    };
+  
+    const handleRoll = () => {
+      const pool = getFilteredWeapons();
+      if (isRolling || pool.length === 0) return;
+      
+      setIsRolling(true);
+      setResult(null);
+  
+      let ticks = 0;
+      const interval = setInterval(() => {
+        ticks++;
+        const randomWeapon = pool[Math.floor(Math.random() * pool.length)];
+        setResult(randomWeapon);
+      }, 50);
+  
+      setTimeout(() => {
+        clearInterval(interval);
+        const finalWeapon = pool[Math.floor(Math.random() * pool.length)];
+        setResult(finalWeapon);
+        setIsRolling(false);
+      }, 1500);
+    };
+  
+    return (
+      <div className="flex flex-col items-center gap-8 w-full">
+         <div className="text-center space-y-2">
+            <h2 className="text-3xl font-black uppercase italic tracking-tighter">Weapon <span className="text-[#FF4655]">Randomizer</span></h2>
+            <p className="text-gray-400 text-sm">Let the protocol decide.</p>
+         </div>
+
+         {/* Category Filter */}
+         <div className="flex flex-wrap justify-center gap-2 max-w-4xl">
+            {Object.keys(WEAPON_CATEGORIES).map(cat => {
+              const isActive = selectedCategories.includes(cat);
+              // Find a representative weapon for icon
+              let repWeapon;
+              if (cat === 'Pistol') {
+                 repWeapon = weapons.find(w => w.displayName === 'Classic');
+              } else {
+                 repWeapon = weapons.find(w => w.category === WEAPON_CATEGORIES[cat as keyof typeof WEAPON_CATEGORIES]);
+              }
+              
+              return (
+                <button
+                  key={cat}
+                  onClick={() => !isRolling && toggleCategory(cat)}
+                  disabled={isRolling}
+                  className={`flex flex-col items-center gap-1 px-4 py-2 rounded border transition-all ${
+                    isActive 
+                      ? 'bg-[#FF4655] border-[#FF4655] text-white' 
+                      : 'bg-transparent border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300'
+                  } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{cat}</span>
+                  {repWeapon && (
+                     <img 
+                        src={repWeapon.displayIcon} 
+                        alt={cat} 
+                        className={`h-6 w-auto object-contain transition-all ${isActive ? 'brightness-200 contrast-0' : 'opacity-50 grayscale'}`} 
+                     />
+                  )}
+                </button>
+              );
+            })}
+         </div>
+  
+         <div className="relative w-full max-w-lg aspect-video bg-[#1c252e] border-2 border-gray-700 flex items-center justify-center p-8 rounded-lg overflow-hidden group">
+            {result ? (
+               <div className="flex flex-col items-center relative z-10">
+                  <img src={result.displayIcon} alt={result.displayName} className="w-full h-auto drop-shadow-2xl max-h-[200px] object-contain" />
+                  <div className="mt-4 text-center">
+                    <h3 className="text-2xl font-black uppercase text-white tracking-widest">{result.displayName}</h3>
+                    <p className="text-xs text-[#FF4655] font-bold uppercase tracking-widest">{result.category.split('::').pop()}</p>
+                  </div>
+               </div>
+            ) : (
+                <div className="text-gray-600 flex flex-col items-center gap-2">
+                   <Crosshair size={48} className="opacity-20" />
+                   <span className="text-xs font-mono uppercase tracking-widest opacity-50">System Ready</span>
+                </div>
+            )}
+             {/* Background Decoration */}
+             <div className="absolute inset-0 bg-[#FF4655]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+         </div>
+  
+         <button
+            onClick={handleRoll}
+            disabled={isRolling || getFilteredWeapons().length === 0}
+            className={`px-12 py-4 text-lg font-black uppercase tracking-widest transition-all clip-path-polygon relative overflow-hidden ${
+              isRolling || getFilteredWeapons().length === 0
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                : 'bg-[#FF4655] hover:bg-[#ff2b3d] text-white shadow-[0_0_20px_rgba(255,70,85,0.4)]'
+            }`}
+             style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
+          >
+             {isRolling ? <RefreshCw className="animate-spin" /> : 'GENERATE WEAPON'}
+         </button>
+      </div>
+    );
+  }
+
