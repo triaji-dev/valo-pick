@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, CircleDot, Play, X, Shield, Sword, Crosshair, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Users, CircleDot, Play, X, Shield, Sword, Crosshair, Zap, AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react';
 
 /**
  * VALORANT AGENT RANDOMIZER
@@ -45,6 +45,7 @@ export default function App() {
   // Configuration
   const [playerCount, setPlayerCount] = useState(5);
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Duelist', 'Initiator', 'Controller', 'Sentinel']);
+  const [gameMode, setGameMode] = useState<'full' | 'balance'>('full');
   const [excludedAgentIds, setExcludedAgentIds] = useState<Set<string>>(new Set());
   const [playerNames, setPlayerNames] = useState<string[]>(['', '', '', '', '']); // Store custom player names
   
@@ -56,6 +57,7 @@ export default function App() {
   // Animation Refs
   const rollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -117,6 +119,17 @@ export default function App() {
     setPlayerNames(newNames);
   };
 
+  const resetApp = () => {
+    setPlayerCount(5);
+    setSelectedRoles(['Duelist', 'Initiator', 'Controller', 'Sentinel']);
+    setGameMode('full');
+    setExcludedAgentIds(new Set());
+    setPlayerNames(['', '', '', '', '']);
+    setRollResults(Array(5).fill(null));
+    setFinalizedCount(0);
+    setIsRolling(false);
+  };
+
   const startRandomizer = () => {
     if (!isValidConfig || isRolling) return;
 
@@ -131,20 +144,82 @@ export default function App() {
     rollIntervalRef.current = setInterval(() => {
       ticks++;
       // Generate random temporary frame
-      const tempResults = [];
       const currentPool = getPool();
       
-      // We just pick random agents for the visual effect, duplicates allowed in animation for chaos
-      for (let i = 0; i < playerCount; i++) {
-        const randomAgent = currentPool[Math.floor(Math.random() * currentPool.length)];
-        tempResults.push(randomAgent);
+      // Animation: Create a temporary unique selection for visual chaos but no duplicates
+      // Shuffle a copy of the current pool
+      const shuffledAnimPool = [...currentPool];
+      for (let i = shuffledAnimPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledAnimPool[i], shuffledAnimPool[j]] = [shuffledAnimPool[j], shuffledAnimPool[i]];
       }
+      const tempResults = shuffledAnimPool.slice(0, playerCount);
       setRollResults(tempResults);
     }, 80); // Fast cycle
 
     // Determine FINAL results immediately so we know where we are going
-    // Fisher-Yates shuffle for true randomness without duplicates
-    const finalPool = [...getPool()];
+    let finalPool = [];
+    
+    if (gameMode === 'balance' && playerCount >= 4) {
+       // --- BALANCE MODE LOGIC ---
+       // 1. Bucket available agents by role
+       const roleBuckets: Record<string, Agent[]> = {
+         Duelist: [], Initiator: [], Controller: [], Sentinel: []
+       };
+       // In Balance Mode, we ignore role filters to ensure fairness, but respect exclusions
+       const balancePool = agents.filter(a => !excludedAgentIds.has(a.uuid));
+       
+       balancePool.forEach(a => {
+         if (a.role?.displayName && roleBuckets[a.role.displayName]) {
+           roleBuckets[a.role.displayName].push(a);
+         }
+       });
+
+       // 2. Pick one from each role
+       const forcedPicks: Agent[] = [];
+       const usedAgentIds = new Set<string>();
+
+       Object.keys(roleBuckets).forEach(role => {
+          const agentsInRole = roleBuckets[role];
+          if (agentsInRole.length > 0) {
+            const pick = agentsInRole[Math.floor(Math.random() * agentsInRole.length)];
+            forcedPicks.push(pick);
+            usedAgentIds.add(pick.uuid);
+          }
+       });
+
+       // 3. Fill the rest if size > 4
+       const remainingSlots = playerCount - forcedPicks.length;
+       const remainingPool = balancePool.filter(a => !usedAgentIds.has(a.uuid));
+       
+       // Shuffle remaining pool
+       for (let i = remainingPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [remainingPool[i], remainingPool[j]] = [remainingPool[j], remainingPool[i]];
+       }
+       
+       const fillers = remainingPool.slice(0, remainingSlots);
+       finalPool = [...forcedPicks, ...fillers];
+
+       // Shuffle the combined result so roles aren't always in first 4 slots
+       for (let i = finalPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [finalPool[i], finalPool[j]] = [finalPool[j], finalPool[i]];
+       }
+
+    } else {
+      // --- FULL RANDOM LOGIC (Existing) ---
+      // Explicitly dedupe by UUID first to be absolutely safe
+      const uniquePool = Array.from(new Map(getPool().map(item => [item.uuid, item])).values());
+      
+      // Fisher-Yates shuffle
+      finalPool = [...uniquePool];
+      for (let i = finalPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [finalPool[i], finalPool[j]] = [finalPool[j], finalPool[i]];
+      }
+      finalPool = finalPool.slice(0, playerCount);
+    }
     for (let i = finalPool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [finalPool[i], finalPool[j]] = [finalPool[j], finalPool[i]];
@@ -190,6 +265,16 @@ export default function App() {
       if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
     };
   }, []);
+
+  // Scroll to results when rolling starts
+  useEffect(() => {
+    if (isRolling && resultsRef.current) {
+      // Small delay to ensure layout is stable
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [isRolling]);
 
 
   // --- Render Helpers ---
@@ -252,6 +337,43 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Game Mode Selection */}
+              <div>
+                <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 block">Mode</label>
+                <div className="flex bg-[#0F1923] p-1 rounded border border-gray-700">
+                  <button
+                    onClick={() => !isRolling && setGameMode('full')}
+                    disabled={isRolling}
+                    className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
+                      gameMode === 'full'
+                        ? 'bg-[#FF4655] text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    Full Random
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
+                      Random agents from the pool
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => !isRolling && playerCount >= 4 && setGameMode('balance')}
+                    disabled={isRolling || playerCount < 4}
+                    className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
+                      gameMode === 'balance'
+                        ? 'bg-[#FF4655] text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    } ${isRolling || playerCount < 4 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    Balance
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
+                      {playerCount < 4 ? "Requires Squad Size 4+" : "1 Duelist, 1 Initiator, 1 Controller, 1 Sentinel guaranteed"}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               {/* Role Filter */}
               <div>
                 <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 block">Role Filter</label>
@@ -305,6 +427,16 @@ export default function App() {
                   </div>
                 )}
               </div>
+              
+              {/* Reset Button */}
+              <button
+                onClick={resetApp}
+                disabled={isRolling}
+                className={`w-full py-3 text-xs font-bold uppercase tracking-widest transition-all border border-gray-700 hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center gap-2 ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <RotateCcw size={14} />
+                Reset Config
+              </button>
             </div>
 
             {/* Right: Agent Grid */}
@@ -323,7 +455,7 @@ export default function App() {
                   Loading Agent Database...
                 </div>
               ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2">
                   {agents
                     .sort((a,b) => a.displayName.localeCompare(b.displayName))
                     .map(agent => {
@@ -369,7 +501,7 @@ export default function App() {
         </section>
 
         {/* --- Bottom Section: Results --- */}
-        <section className="flex-1 flex flex-col justify-center items-center min-h-[300px]">
+        <section ref={resultsRef} className="flex-1 flex flex-col justify-center items-center min-h-[300px] scroll-mt-32">
           {/* Result Slots */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
             {Array.from({ length: playerCount }).map((_, idx) => {
@@ -378,9 +510,22 @@ export default function App() {
               const isEmpty = !agent && !isRolling;
 
               return (
-                <div 
-                  key={idx}
-                  className={`relative w-full aspect-[3/4] bg-[#1c252e] border-2 transition-all duration-300 transform ${
+                <div key={idx} className="flex flex-col gap-2 w-full">
+                  {/* Player Label / Input */}
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-[#FF4655] opacity-0 group-focus-within:opacity-10 transition-opacity skew-x-12 rounded-sm" />
+                    <input
+                      type="text"
+                      value={playerNames[idx]}
+                      onChange={(e) => updatePlayerName(idx, e.target.value)}
+                      placeholder={`PLAYER ${idx + 1}`}
+                      disabled={isRolling}
+                      className="relative w-full bg-transparent border-b border-gray-700 text-[10px] font-black text-gray-400 focus:text-white tracking-[0.2em] py-2 text-center focus:outline-none focus:border-[#FF4655] placeholder:text-gray-700 uppercase transition-all font-mono"
+                    />
+                  </div>
+
+                  <div 
+                    className={`relative w-full aspect-[3/4] bg-[#1c252e] border-2 transition-all duration-300 transform ${
                     isEmpty 
                       ? 'border-gray-800 border-dashed opacity-50' 
                       : isFinalized 
@@ -391,18 +536,6 @@ export default function App() {
                     clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)'
                   }}
                 >
-                  {/* Player Label / Input */}
-                  <div className="absolute top-0 left-0 z-20">
-                    <input
-                      type="text"
-                      value={playerNames[idx]}
-                      onChange={(e) => updatePlayerName(idx, e.target.value)}
-                      placeholder={`PLAYER ${idx + 1}`}
-                      disabled={isRolling}
-                      className="bg-black/60 backdrop-blur-sm border-b border-r border-white/10 text-[10px] font-bold text-white tracking-widest px-3 py-1.5 w-28 focus:outline-none focus:bg-[#FF4655] focus:placeholder-white/70 placeholder:text-gray-500 uppercase transition-colors"
-                    />
-                  </div>
-
                   {agent ? (
                     <>
                       {/* Agent Image */}
@@ -440,6 +573,7 @@ export default function App() {
                       <span className="text-xs font-mono uppercase">Waiting for Lock In</span>
                     </div>
                   )}
+                  </div>
                 </div>
               );
             })}
@@ -451,6 +585,7 @@ export default function App() {
       {/* Footer */}
       <footer className="w-full bg-[#0F1923] border-t border-gray-800 p-6 mt-8 text-center text-gray-600 text-xs">
         <p>ValoRandom is an unofficial app and is not endorsed by Riot Games.</p>
+        <p> Developed by <a href="https://github.com/triaji-dev" target="_blank" rel="noopener noreferrer" className='text-[#FF4655] hover:text-[#FF4655]/80 transition-colors'>triaji-dev</a>.</p>
       </footer>
 
       {/* Tailwind Custom Styles for Animation */}
