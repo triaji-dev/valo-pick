@@ -1,73 +1,113 @@
-# React + TypeScript + Vite
+# 🎲 Valo Pick - Tactical Agent Randomizer & Analytics
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Valo Pick** is a modern web application designed for Valorant players to generate random agent compositions with tactical balance logic, track pick history, and analyze pick statistics over time using a cloud database.
 
-Currently, two official plugins are available:
+This project demonstrates a full-stack integration between a React Frontend (Vite) and an Express Backend with persistent storage on Neon (PostgreSQL).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## ✨ Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Advanced Agent Randomizer
+- **Random Mode**: Selects 5 unique agents purely at random.
+- **Balance Mode**: Algorithms guarantee a viable team composition:
+  - 1 Duelist
+  - 1 Initiator
+  - 1 Controller
+  - 1 Sentinel
+  - 1 Flex (Random unique fill)
+- **Exclusion Filters**:
+  - Click any agent icon to Ban/Exclude them from the pool.
+  - Visual indicators for banned agents (grayscale + red border).
+- **Cinematic Animation**:
+  - "Continuous Shuffle" effect where unrevealed slots keep cycling.
+  - "Sequential Reveal" (Lock In) animation for dramatic effect.
+  - Race-condition safe state updates to ensure UI matches Database logs.
 
-## Expanding the ESLint configuration
+### 2. Analytics & History (Neon DB)
+- **Log History**:
+  - Records every locked-in session to the database.
+  - **Infinite Scroll**: Auto-loads historical data in batches of 20 as you scroll.
+  - **Inline Delete**: Remove specific history logs with a custom interactive confirmation UI (Check/Cancel).
+- **Agent Recap**:
+  - **Table View**: Detailed stats showing Pick Count, Role, and Agent Name (with Avatar). Sortable columns.
+  - **Interactive Chart**: Dynamic bar chart visualizing top picks.
+    - **Dynamic Height**: Chart grows vertically based on the number of agents.
+    - **Custom Tooltips**: Hovering bars shows the Agent's Face and exact pick count.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 3. Modern Tech Stack
+- **Frontend**: React 19, Vite, TailwindCSS (Dark/Gaming Theme).
+- **Backend**: Express.js (TypeScript), running on port 3001.
+- **Database**: Neon (Serverless PostgreSQL).
+- **Icons**: Lucide React & Valorant API Assets.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🛠️ Architecture & Setup
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Database Schema (PostgreSQL)
+
+Execute this SQL in your Neon SQL Editor to set up the required table:
+
+```sql
+CREATE TABLE IF NOT EXISTS agent_picks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  mode TEXT,
+  picked_agents JSONB
+);
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Environment Variables (.env)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Create a `.env` file in the root directory:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+DATABASE_URL=postgresql://<user>:<password>@<host>/neondb?sslmode=require
 ```
+
+### Local Development
+
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Start Development (Concurrent)**:
+   Runs both React Client (Vite) and Express Server simultaneously.
+   ```bash
+   npm run dev
+   ```
+   - Frontend: `http://localhost:5173`
+   - Backend: `http://localhost:3001`
+
+---
+
+## 🤖 AI Replication Guide
+
+For AI Agents looking to replicate or understand this project, here is the critical file structure and logic map:
+
+### 1. `server/index.ts` (The Backend)
+- **Role**: Express server handling API requests.
+- **Key Endpoints**:
+  - `POST /api/picks`: Saves a JSON array of selected agents.
+  - `GET /api/picks`: Fetches history with Pagination (`limit` & `offset`).
+  - `DELETE /api/picks/:id`: Hard deletes a log entry.
+  - `GET /api/stats/recap`: Aggregates JSONB data using SQL to count agent picks.
+    - *Query Tip*: Uses `jsonb_array_elements` to flatten the JSON array for counting.
+
+### 2. `src/lib/api.ts` (The Bridge)
+- **Role**: Typed API client.
+- **Pattern**: Centralized `api` object containing async functions (`logPick`, `getHistory`, `deletePick`, `getRecap`).
+- **Types**: Exports shared interfaces like `PickLog` and `AgentRecap`.
+
+### 3. `src/App.tsx` (The Brain)
+- **Role**: Main UI and Randomizer Logic.
+- **Critical Logic**:
+  - `startRandomizer()`: Handles the "Continuous Shuffle" animation.
+  - **Race Condition Fix**: Uses a local variable `currentIndex` inside the reveal implementation to ensure state updates target the correct array index during rapid animation frames.
+  - **Balance Logic**: Pre-buckets agents by role, forces 1 of each major role, then fills the 5th spot from the remaining pool (deduplicated).
+
+### 4. `src/components/stats/` (The Data Viz)
+- `HistoryTable.tsx`: Implements **IntersectionObserver** for infinite scrolling and per-row delete confirmation state.
+- `RecapChart.tsx`: Uses `recharts` with a dynamic height calculation (`data.length * 50`) to ensure all bars are readable regardless of agent count.

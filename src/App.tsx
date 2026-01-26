@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, CircleDot, Play, X, Shield, Sword, Crosshair, Zap, AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react';
+import { Users, CircleDot, Play, X, Shield, Sword, Crosshair, Zap, AlertTriangle, RefreshCw, RotateCcw, BarChart2 } from 'lucide-react';
+import { api } from './lib/api';
+import StatisticsView from './components/stats/StatisticsView';
 
 /**
  * VALORANT AGENT RANDOMIZER
@@ -49,7 +51,7 @@ export default function App() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [weapons, setWeapons] = useState<Weapon[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'agent' | 'weapon'>('agent');
+  const [currentView, setCurrentView] = useState<'agent' | 'weapon' | 'statistics'>('agent');
   // const [error, setError] = useState<string | null>(null);
   
   // Configuration
@@ -163,21 +165,29 @@ export default function App() {
     setRollResults(Array(playerCount).fill(null));
 
     // Start the "shuffling" animation
-    let ticks = 0;
+    let revealedLocal = 0; // Closure variable to coordinate interval and reveal loop
+
     rollIntervalRef.current = setInterval(() => {
-      ticks++;
       // Generate random temporary frame
       const currentPool = getPool();
       
-      // Animation: Create a temporary unique selection for visual chaos but no duplicates
-      // Shuffle a copy of the current pool
-      const shuffledAnimPool = [...currentPool];
-      for (let i = shuffledAnimPool.length - 1; i > 0; i--) {
+      // Shuffle for animation frame
+      const shuffledAnim = [...currentPool];
+      for (let i = shuffledAnim.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [shuffledAnimPool[i], shuffledAnimPool[j]] = [shuffledAnimPool[j], shuffledAnimPool[i]];
+        [shuffledAnim[i], shuffledAnim[j]] = [shuffledAnim[j], shuffledAnim[i]];
       }
-      const tempResults = shuffledAnimPool.slice(0, playerCount);
-      setRollResults(tempResults);
+      
+      setRollResults(prev => {
+         const next = [...prev];
+         // Only update slots that aren't revealed yet
+         for (let i = 0; i < playerCount; i++) {
+             if (i >= revealedLocal) {
+                 next[i] = shuffledAnim[i % shuffledAnim.length];
+             }
+         }
+         return next;
+      });
     }, 80); // Fast cycle
 
     // Determine FINAL results immediately so we know where we are going
@@ -229,7 +239,9 @@ export default function App() {
        const remainingSlots = Math.max(0, playerCount - forcedPicks.length);
        
        // For filling, we strictly respect exclusions unless we run out of agents (unlikely)
-       const poolForFillers = agents.filter(a => !excludedAgentIds.has(a.uuid) && !usedAgentIds.has(a.uuid));
+       // Deduplicate source agents first to ensure no subtle duplicates leak through
+       const uniqueAgents = Array.from(new Map(agents.map(a => [a.uuid, a])).values());
+       const poolForFillers = uniqueAgents.filter(a => !excludedAgentIds.has(a.uuid) && !usedAgentIds.has(a.uuid));
        
        // Shuffle remaining pool
        for (let i = poolForFillers.length - 1; i > 0; i--) {
@@ -266,35 +278,37 @@ export default function App() {
     const finalSelection = finalPool.slice(0, playerCount);
 
     // Stop shuffling and reveal one by one
+    // Let the shuffle run for a bit, then start revealing
     setTimeout(() => {
-      if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
-      
-      // Reveal loop
-      let revealedCount = 0;
-      
       const revealNext = () => {
-        if (revealedCount < playerCount) {
-          // Update the result at this index to the FINAL one
+        if (revealedLocal < playerCount) {
+          // Capture the current index to ensure the state updater uses the correct value
+          // even if revealedLocal changes before the update processes.
+          const currentIndex = revealedLocal; 
+
+          // Lock in the current slot
           setRollResults(prev => {
             const next = [...prev];
-            next[revealedCount] = finalSelection[revealedCount];
+            next[currentIndex] = finalSelection[currentIndex];
             return next;
           });
           
-          revealedCount++;
-          setFinalizedCount(revealedCount);
+          revealedLocal++; // Allow interval to skip this index now
+          setFinalizedCount(revealedLocal);
           
-          // Sound effect trigger could go here
-          
-          revealTimeoutRef.current = setTimeout(revealNext, 400); // 400ms delay between reveals
+          revealTimeoutRef.current = setTimeout(revealNext, 500);
         } else {
+          // All done
+          if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
           setIsRolling(false);
+          api.logPick(gameMode, finalSelection);
         }
       };
 
       revealNext();
+    }, 800);
 
-    }, 2000); // Run shuffle for 2 seconds
+
   };
 
   // Cleanup on unmount
@@ -365,6 +379,20 @@ export default function App() {
             }`}
           >
             Pick Weapon
+          </button>
+          <button
+             onClick={() => !isRolling && setCurrentView('statistics')}
+             disabled={isRolling}
+             className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${
+              currentView === 'statistics'
+                ? 'border-[#FF4655] text-white bg-white/5'
+                : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+             <div className="flex items-center gap-2">
+               <BarChart2 size={16} />
+               Stats
+             </div>
           </button>
         </div>
       </nav>
@@ -644,18 +672,32 @@ export default function App() {
                       <span className="text-xs font-mono uppercase">Waiting for Lock In</span>
                     </div>
                   )}
-                  </div>
+                </div>
                 </div>
               );
             })}
           </div>
         </section>
 
+
           </>
-        ) : (
+        ) : currentView === 'weapon' ? (
            /* --- WEAPON PICKER VIEW --- */
            <WeaponRandomizer weapons={weapons} isRolling={isRolling} setIsRolling={setIsRolling} />
+        ) : (
+           /* --- STATISTICS VIEW --- */
+           <section className="bg-[#1c252e] border border-gray-700 rounded-lg p-6 shadow-xl">
+             <div className="flex items-center gap-4 mb-6">
+                <BarChart2 className="text-[#FF4655]" size={32} />
+                <div>
+                  <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">Tactical <span className="text-[#FF4655]">Database</span></h2>
+                  <p className="text-gray-400 text-xs font-mono uppercase tracking-widest">History & Analytics Protocol</p>
+                </div>
+             </div>
+             <StatisticsView />
+           </section>
         )}
+
       </main>
 
       {/* Footer */}
