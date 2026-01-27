@@ -2,10 +2,10 @@ import { Sword, Zap, CircleDot, Shield } from 'lucide-react';
 import type { Agent } from './types';
 
 export const ROLES: Record<string, { color: string; bg: string; border: string; icon: any; colorAll: string; bgAll: string; borderAll: string }> = {
-  Duelist: { color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/50', icon: Sword, colorAll: 'text-white', bgAll: 'bg-red-500/50', borderAll: 'border-red-500/50' },
-  Initiator: { color: 'text-yellow-400', bg: 'bg-yellow-500/20', border: 'border-yellow-500/50', icon: Zap, colorAll: 'text-white', bgAll: 'bg-yellow-500/50', borderAll: 'border-yellow-500/50' },
-  Controller: { color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/50', icon: CircleDot, colorAll: 'text-white', bgAll: 'bg-purple-500/50', borderAll: 'border-purple-500/50' },
-  Sentinel: { color: 'text-cyan-400', bg: 'bg-cyan-500/20', border: 'border-cyan-500/50', icon: Shield, colorAll: 'text-white', bgAll: 'bg-cyan-500/50', borderAll: 'border-cyan-500/50' },
+  Duelist: { color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/50', icon: Sword, colorAll: 'text-white', bgAll: 'bg-red-500/70', borderAll: 'border-red-500/50' },
+  Initiator: { color: 'text-yellow-400', bg: 'bg-yellow-500/20', border: 'border-yellow-500/50', icon: Zap, colorAll: 'text-white', bgAll: 'bg-yellow-500/70', borderAll: 'border-yellow-500/50' },
+  Controller: { color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/50', icon: CircleDot, colorAll: 'text-white', bgAll: 'bg-purple-500/70', borderAll: 'border-purple-500/50' },
+  Sentinel: { color: 'text-cyan-400', bg: 'bg-cyan-500/20', border: 'border-cyan-500/50', icon: Shield, colorAll: 'text-white', bgAll: 'bg-cyan-500/70', borderAll: 'border-cyan-500/50' },
 };
 
 export const FALLBACK_AGENTS: Agent[] = [
