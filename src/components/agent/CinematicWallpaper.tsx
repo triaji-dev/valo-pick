@@ -256,7 +256,7 @@ generic city, cyberpunk setting, sci-fi interiors, wrong Valorant map elements, 
         <div className="flex items-center gap-3">
           <div>
             <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">
-              Cinematic <span className="text-[#FF4655]">Wallpaper</span>
+              Cinematic <span className="text-[#FF4655]">Wallpaper</span> <span className="text-white/30 font-semibold">(Experimental)</span>
             </h3>
             <p className="text-[10px] text-gray-500 font-mono tracking-widest">Use prompt to transform Wallpaper into cinematic render using Gemini.</p>
           </div>
