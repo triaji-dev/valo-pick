@@ -140,11 +140,11 @@ export default function AgentControlPanel({
               ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
               : isRolling 
                 ? 'bg-[#FF4655] text-white cursor-wait'
-                : 'bg-[#FF4655] hover:bg-[#b72733] text-white shadow-[0_0_20px_rgba(255,70,85,0.4)]'
+                : 'bg-[#FF4655] hover:bg-[#b22733] text-white shadow-[0_0_20px_rgba(255,70,85,0.4)]'
           }`}
           style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
         >
-          <span className="relative z-10 flex items-center justify-center gap-2">
+          <span className={`relative z-10 flex items-center justify-center gap-2`}>
             {!isValidConfig ?  "" : isRolling ? <RefreshCw className="animate-spin" /> : <Play fill="currentColor" />}
             {!isValidConfig ? 'Select agent' : isRolling ? 'Decrypting...' : 'Lock In'}
           </span>

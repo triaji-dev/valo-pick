@@ -90,7 +90,7 @@ export const useRandomizer = ({
           revealedLocal++; 
           setFinalizedCount(revealedLocal);
           
-          revealTimeoutRef.current = setTimeout(revealNext, 1000);
+          revealTimeoutRef.current = setTimeout(revealNext, 600);
         } else {
           if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
           setIsRolling(false);
@@ -99,7 +99,7 @@ export const useRandomizer = ({
       };
 
       revealNext();
-    }, 1500);
+    }, 1200);
   }, [agents, pool, excludedAgentIds, playerCount, gameMode, isRolling]);
 
   const resetRandomizer = useCallback(() => {

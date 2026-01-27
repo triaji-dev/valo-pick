@@ -47,7 +47,7 @@ export default function AgentRevealSection({
           <div className="flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FF4655]">Status // Sequence</span>
             <span className="text-xl font-black uppercase italic tracking-tighter text-white">
-              {isRolling ? "Analyzing Tactical Data..." : finalizedCount === playerCount ? "Squad Finalized" : "Lockdown Progress"}
+              {isRolling ? gameMode === 'full' ? "Chaotically Processing..." : "Balancing Squad..." : finalizedCount === playerCount ? gameMode === 'full' ? "Chaos Squad" : "Balanced Squad" : "Lockdown Progress"}
             </span>
           </div>
           <div className="flex flex-col items-end">
@@ -145,7 +145,7 @@ export default function AgentRevealSection({
 
       {/* Balance Mode CTA */}
       {isFinished && gameMode === 'full' && playerCount>4 && (
-        <div className="mt-12 w-full max-w-lg animate-in zoom-in-95 fade-in duration-700 delay-500">
+        <div className="mt-12 w-full max-w-lg animate-tactical-in">
            <div className="relative group cursor-pointer" onClick={handleTryBalance}>
               {/* Animated Border Background */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#FF4655] to-purple-600 rounded opacity-50 group-hover:opacity-100 transition duration-500 blur-sm animate-pulse" />

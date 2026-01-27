@@ -139,6 +139,17 @@ export default function AgentWallpaper({ agents, isRolling = false, isRestoring 
   const wallpaperRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState(() => THEMES[Math.floor(Math.random() * THEMES.length)]);
   const [pattern, setPattern] = useState(() => PATTERNS[Math.floor(Math.random() * PATTERNS.length)]);
+  const [mounted, setMounted] = useState(false);
+  
+  // Trigger animations only after rolling is finished and content is mounted
+  useEffect(() => {
+    if (!isRolling && !isRestoring) {
+      const timer = setTimeout(() => setMounted(true), 50);
+      return () => clearTimeout(timer);
+    } else {
+      setMounted(false);
+    }
+  }, [isRolling, isRestoring]);
   
   const [overlayStyle, setOverlayStyle] = useState(() => {
      const isLeft = Math.random() > 0.5;
@@ -201,7 +212,7 @@ export default function AgentWallpaper({ agents, isRolling = false, isRestoring 
   if(!isRolling && validAgents.length === 0) return null;
 
   return (
-    <section className="w-full flex flex-col gap-4 animate-in fade-in zoom-in duration-1000 slide-in-from-bottom-10">
+    <section className="w-full flex flex-col gap-4 animate-tactical-in">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
                 <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Squad <span className="text-[#FF4655]">
@@ -260,17 +271,23 @@ export default function AgentWallpaper({ agents, isRolling = false, isRestoring 
             ) : (
               /* Layer 1: Agent Images */
               <>
-                  <div className="absolute inset-x-0 bottom-[5%] h-[90%] flex items-end justify-center pointer-events-none">
+                  <div 
+                      key={validAgents.map(a => a.uuid).join(',')}
+                      className="absolute inset-x-0 bottom-[5%] h-[90%] flex items-end justify-center pointer-events-none"
+                  >
                       {validAgents.map((agent, idx) => {
-                          const style = getStyle(idx, validAgents.length);
+                          const style: any = getStyle(idx, validAgents.length);
+
                           return (
                               <div 
                                   key={`img-${agent.uuid}`}
-                                  className="absolute bottom-0 w-[40%] md:w-[40%] transition-all duration-500 origin-bottom pointer-events-auto group/agent"
+                                  className={`absolute bottom-0 w-[40%] md:w-[40%] transition-all origin-bottom pointer-events-auto group/agent ${mounted ? 'animate-agent-reveal' : 'opacity-0'}`}
                                   style={{
                                       ...style,
-                                      clipPath: 'inset(0 12% 0 12%)' 
-                                  }}
+                                      '--scale': (style.transform.match(/scale\((.*?)\)/) || [])[1] || 1,
+                                      clipPath: 'inset(0 12% 0 12%)',
+                                      animationDelay: `${idx * 200}ms`
+                                  } as React.CSSProperties}
                               >
                                   <img 
                                       src={agent.fullPortrait || agent.displayIcon} 
