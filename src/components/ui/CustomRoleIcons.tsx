@@ -11,7 +11,7 @@ export const DuelistIcon = (props: IconProps) => (
   </svg>
 );
 
-export const InitiatorIcon = (props: IconProps) => (
+export const ControllerIcon = (props: IconProps) => (
   <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path d="M239.732 128.084C239.91 125.412 240 122.717 240 120C240 53.7258 186.274 0 120 0C53.7258 0 0 53.7258 0 120C0 122.736 0.0915846 125.451 0.271856 128.142L120.032 27.6512L120.037 27.6567L120.041 27.6512L239.732 128.084Z" fill="currentColor"/>
     <path d="M229.189 169.847L120.037 78.2571L10.8311 169.891C17.3651 184.165 26.6163 196.936 37.923 207.541L119.867 138.782L119.872 138.787L119.877 138.782L201.956 207.654C213.329 197.016 222.631 184.19 229.189 169.847Z" fill="currentColor"/>
@@ -19,7 +19,7 @@ export const InitiatorIcon = (props: IconProps) => (
   </svg>
 );
 
-export const ControllerIcon = (props: IconProps) => (
+export const SentinelIcon = (props: IconProps) => (
   <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path d="M134.416 239.143C193.893 232.022 240 181.395 240 120C240 103.114 236.512 87.0428 230.218 72.4671L134.416 239.143Z" fill="currentColor"/>
     <path d="M103.538 238.88C45.0528 230.856 0 180.69 0 120C0 103.845 3.19224 88.4361 8.98034 74.3689L103.538 238.88Z" fill="currentColor"/>
@@ -28,7 +28,7 @@ export const ControllerIcon = (props: IconProps) => (
   </svg>
 );
 
-export const SentinelIcon = (props: IconProps) => (
+export const InitiatorIcon = (props: IconProps) => (
   <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path d="M121.207 0L203.739 137.227L158.388 137.227L158.378 137.211H108.192L164.766 231.366C208.867 213.622 240 170.444 240 119.994C240 54.1228 186.925 0.647765 121.207 0Z" fill="currentColor"/>
     <path d="M80.0272 6.81266L135.18 98.6024L70.1739 98.6025L39.617 98.3573L124.667 239.905C123.119 239.964 121.563 239.994 120 239.994C53.7258 239.994 0 186.268 0 119.994C0 67.7351 33.4053 23.2784 80.0272 6.81266Z" fill="currentColor"/>

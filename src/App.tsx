@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import Header from './components/layout/Header';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import AgentRevealSection from './components/agent/AgentRevealSection';
 import AgentControlPanel from './components/agent/AgentControlPanel';
 import AgentPoolGrid from './components/agent/AgentPoolGrid';
-import AgentRevealSection from './components/agent/AgentRevealSection';
+import AgentWallpaper from './components/agent/AgentWallpaper';
 import WeaponRandomizer from './components/weapon/WeaponRandomizer';
 import StatisticsSection from './components/stats/StatisticsSection';
 
@@ -46,7 +47,6 @@ export default function App() {
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to results when rolling starts
   useEffect(() => {
     if (isRolling && resultsRef.current) {
       setTimeout(() => {
@@ -70,7 +70,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F1923] text-white font-sans selection:bg-[#FF4655] selection:text-white flex flex-col items-center">
+    <div className="min-h-screen bg-[#0F1923] text-white font-sans selection:bg-[#FF4655] selection:text-white flex flex-col items-center overflow-hidden">
       
       <Header />
       
@@ -128,6 +128,10 @@ export default function App() {
               updatePlayerName={updatePlayerName}
               resultsRef={resultsRef}
             />
+
+            {((!isRolling && finalizedCount === playerCount) || isRolling) && playerCount > 0 && (
+               <AgentWallpaper agents={rollResults} isRolling={isRolling} />
+            )}
 
           </>
         ) : currentView === 'weapon' ? (

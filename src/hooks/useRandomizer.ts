@@ -25,7 +25,6 @@ export const useRandomizer = ({
   const rollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Ensure results array matches playerCount, but preserve values if length matches
   useEffect(() => {
     setRollResults(prev => {
       if (prev.length !== playerCount) {
@@ -44,9 +43,7 @@ export const useRandomizer = ({
 
     let revealedLocal = 0; 
 
-    // Animation Loop
     rollIntervalRef.current = setInterval(() => {
-      // Shuffle for animation frame
       const shuffledAnim = [...pool];
       for (let i = shuffledAnim.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
