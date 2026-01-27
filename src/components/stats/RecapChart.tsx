@@ -38,6 +38,7 @@ export default function RecapChart() {
 
   return (
     <div className="w-full bg-[#1c252e] border border-gray-700 rounded-lg p-6 overflow-hidden" style={{ height: `${chartHeight}px` }}>
+            <p className='text-[9px] text-gray-500 mb-4'>How frequent agents picked</p>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ left: 20 }}>
           <XAxis type="number" stroke="#6b7280" fontSize={10} />

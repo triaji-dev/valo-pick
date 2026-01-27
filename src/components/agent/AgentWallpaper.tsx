@@ -204,7 +204,7 @@ export default function AgentWallpaper({ agents, isRolling = false, isRestoring 
     <section className="w-full flex flex-col gap-4 animate-in fade-in zoom-in duration-1000 slide-in-from-bottom-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
-                <h3 className="text-xl font-black uppercase italic tracking-tighter text-white/50">Squad <span className="text-[#FF4655]">
+                <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Squad <span className="text-[#FF4655]">
                   {isRolling ? "Generating..." : "Assemble"}
                 </span></h3>
             </div>

@@ -12,6 +12,9 @@ interface AgentRevealSectionProps {
   playerNames: string[];
   updatePlayerName: (index: number, name: string) => void;
   resultsRef: LegacyRef<HTMLElement>;
+  gameMode: 'full' | 'balance';
+  setGameMode: (m: 'full' | 'balance') => void;
+  resetApp: () => void;
 }
 
 export default function AgentRevealSection({
@@ -23,8 +26,18 @@ export default function AgentRevealSection({
   playerNames,
   updatePlayerName,
   resultsRef,
+  gameMode,
+  setGameMode,
+  resetApp,
 }: AgentRevealSectionProps) {
   const progress = playerCount > 0 ? (finalizedCount / playerCount) * 100 : 0;
+  const isFinished = finalizedCount === playerCount && !isRolling && !isRestoring;
+
+  const handleTryBalance = () => {
+    setGameMode('balance');
+    resetApp();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <section ref={resultsRef} className="flex-1 flex flex-col justify-center items-center min-h-[300px] scroll-mt-32 w-full">
@@ -129,6 +142,32 @@ export default function AgentRevealSection({
           );
         })}
       </div>
+
+      {/* Balance Mode CTA */}
+      {isFinished && gameMode === 'full' && (
+        <div className="mt-12 w-full max-w-lg animate-in zoom-in-95 fade-in duration-700 delay-500">
+           <div className="relative group cursor-pointer" onClick={handleTryBalance}>
+              {/* Animated Border Background */}
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#FF4655] to-purple-600 rounded opacity-50 group-hover:opacity-100 transition duration-500 blur-sm animate-pulse" />
+              
+              <div className="relative flex items-center justify-between bg-[#0F1923] p-4 border border-gray-700 group-hover:border-[#FF4655] transition-all">
+                 <div className="flex items-center gap-4">
+                    <div className="bg-[#FF4655]/10 p-2 rounded">
+                       <Users size={18} className="text-[#FF4655]" />
+                    </div>
+                    <div>
+                       <p className="text-sm font-black text-white uppercase italic tracking-tighter">Too chaotic? Try "Balance Mode"</p>
+                       <p className="text-[10px] text-gray-500 uppercase tracking-widest leading-none mt-1">For even role distribution.</p>
+                    </div>
+                 </div>
+                 
+                 <div className="flex items-center gap-2 px-3 py-1.5 bg-[#FF4655] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#b52733] transition-colors">
+                    Switch Now
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -18,19 +18,14 @@ export default function StatisticsView({ onRestore }: StatisticsViewProps) {
            onClick={() => setActiveTab('history')}
            className={`px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'history' ? 'text-white border-b-2 border-[#FF4655]' : 'text-gray-500 hover:text-gray-300'}`}
          >
-           Log History
+           History
          </button>
-         <button 
-           onClick={() => setActiveTab('recap_table')}
-           className={`px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'recap_table' ? 'text-white border-b-2 border-[#FF4655]' : 'text-gray-500 hover:text-gray-300'}`}
-         >
-           Agent Recap (Table)
-         </button>
+
          <button 
            onClick={() => setActiveTab('recap_chart')}
            className={`px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'recap_chart' ? 'text-white border-b-2 border-[#FF4655]' : 'text-gray-500 hover:text-gray-300'}`}
          >
-           Agent Recap (Chart)
+           Chart
          </button>
        </div>
 

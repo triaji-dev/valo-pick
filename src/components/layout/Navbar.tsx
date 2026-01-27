@@ -12,8 +12,8 @@ export default function Navbar({ currentView, setCurrentView, isRolling }: Navba
       <div className="max-w-6xl mx-auto flex">
         <button
           onClick={() => !isRolling && setCurrentView('agent')}
-          disabled={isRolling}
-          className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${
+          disabled={isRolling} 
+          className={`px-8 py-4 text-xs md:text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${
             currentView === 'agent'
               ? 'border-[#FF4655] text-white bg-white/5'
               : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'
@@ -24,7 +24,7 @@ export default function Navbar({ currentView, setCurrentView, isRolling }: Navba
         <button
            onClick={() => !isRolling && setCurrentView('weapon')}
            disabled={isRolling}
-           className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${
+           className={`px-8 py-4 text-xs md:text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${
             currentView === 'weapon'
               ? 'border-[#FF4655] text-white bg-white/5'
               : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'
@@ -35,7 +35,7 @@ export default function Navbar({ currentView, setCurrentView, isRolling }: Navba
         <button
            onClick={() => !isRolling && setCurrentView('statistics')}
            disabled={isRolling}
-           className={`px-8 py-4 text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${
+           className={`px-8 py-4 text-xs md:text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${
             currentView === 'statistics'
               ? 'border-[#FF4655] text-white bg-white/5'
               : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'

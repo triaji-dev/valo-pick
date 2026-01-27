@@ -106,6 +106,9 @@ export default function App() {
         {currentView === 'agent' ? (
           <>
             <section className="bg-[#1c252e] border border-gray-700 rounded-lg p-6 shadow-xl relative">
+              <div className="text-center space-y-2 mb-4">
+                <h2 className="text-3xl font-black uppercase italic tracking-tighter">Agent <span className="text-[#FF4655]">Randomizer</span></h2>
+              </div>
               <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
                   <div className="absolute top-0 right-0 p-4 opacity-5">
                     <img src="https://media.valorant-api.com/agents/roles/1b47567f-8f7b-444b-a607-4385319db771/displayicon.png" className="w-48 h-48 opacity-20" alt="" />
@@ -150,6 +153,9 @@ export default function App() {
               playerNames={playerNames}
               updatePlayerName={updatePlayerName}
               resultsRef={resultsRef}
+              gameMode={gameMode}
+              setGameMode={setGameMode}
+              resetApp={resetApp}
             />
 
             {((!isRolling && finalizedCount === playerCount) || isRolling || isRestoring) && playerCount > 0 && (
