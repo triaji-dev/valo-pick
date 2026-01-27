@@ -1,4 +1,4 @@
-import { RotateCcw, RefreshCw, Play, AlertTriangle } from 'lucide-react';
+import { RotateCcw, RefreshCw, Play } from 'lucide-react';
 import { ROLES } from '../../constants';
 import type { Agent } from '../../types';
 
