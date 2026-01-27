@@ -32,11 +32,11 @@ export default function AgentControlPanel({
   loading,
 }: AgentControlPanelProps) {
   return (
-    <div className="lg:col-span-4 flex flex-col gap-6">
+    <div className="lg:col-span-4 flex flex-col gap-4">
       
       <div>
         <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 block">Squad Size</label>
-        <div className="flex bg-[#0F1923] p-1 rounded border border-gray-700">
+        <div className="flex bg-[#0F1923] p-1 border border-gray-700">
           {[1, 2, 3, 4, 5].map(num => (
             <button
               key={num}
@@ -55,8 +55,8 @@ export default function AgentControlPanel({
       </div>
 
       <div>
-        <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 block">Mode</label>
-        <div className="flex bg-[#0F1923] p-1 rounded border border-gray-700">
+        <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 block">Mode</label>
+        <div className="flex bg-[#0F1923] p-1 border border-gray-700">
           <button
             onClick={() => !isRolling && playerCount >= 2 && setGameMode('balance')}
             disabled={isRolling || playerCount < 2}
@@ -67,7 +67,7 @@ export default function AgentControlPanel({
             } ${isRolling || playerCount < 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Balance
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
               {playerCount < 2 ? "Requires Squad Size 2+" : playerCount < 4 ? "Unique roles guaranteed" : "Roles distributed as evenly as possible"}
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
             </div>
@@ -82,7 +82,7 @@ export default function AgentControlPanel({
             } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Full Random
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
               Random agents from the pool
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
             </div>
@@ -110,12 +110,12 @@ export default function AgentControlPanel({
                 onClick={() => !isRolling && handleRoleClick(role)}
                 disabled={isRolling}
                 title={isAllBanned ? "Click to enable all" : "Click to ban all"}
-                className={`flex items-center gap-2 px-3 py-2 rounded border transition-all text-sm font-medium ${
+                className={`flex items-center gap-2 px-3 py-2 border transition-all text-sm font-medium ${
                   isAllBanned 
                     ? 'bg-[#0F1923] border-gray-700 text-gray-500 hover:border-gray-500 opacity-60'
                     : isMixed
                         ? `${config.bg} ${config.border} ${config.color} border-dashed bg-opacity-30`
-                        : `${config.bg} ${config.border} ${config.color} border-opacity-100`
+                        : `${config.bgAll} ${config.borderAll} ${config.colorAll} border-opacity-100`
                 } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Icon size={16} className={isAllBanned ? "grayscale" : ""} />
@@ -127,7 +127,7 @@ export default function AgentControlPanel({
         </div>
       </div>
 
-      <div className="mt-auto pt-4">
+      <div className="mt-auto">
         <button
           onClick={startRandomizer}
           disabled={!isValidConfig || isRolling || loading}
@@ -146,7 +146,7 @@ export default function AgentControlPanel({
           </span>
         </button>
         {!isValidConfig && (
-          <div className="flex items-center gap-2 mt-3 text-red-400 text-xs bg-red-900/20 p-2 rounded border border-red-900/50">
+          <div className="flex items-center gap-2 mt-3 text-red-400 text-xs bg-red-900/20 p-2 border border-red-900/50">
             <AlertTriangle size={14} />
             <span>Not enough agents selected for squad size.</span>
           </div>
