@@ -144,7 +144,7 @@ export default function AgentRevealSection({
       </div>
 
       {/* Balance Mode CTA */}
-      {isFinished && gameMode === 'full' && (
+      {isFinished && gameMode === 'full' && playerCount>4 && (
         <div className="mt-12 w-full max-w-lg animate-in zoom-in-95 fade-in duration-700 delay-500">
            <div className="relative group cursor-pointer" onClick={handleTryBalance}>
               {/* Animated Border Background */}
