@@ -131,35 +131,29 @@ export default function AgentControlPanel({
         <button
           onClick={startRandomizer}
           disabled={!isValidConfig || isRolling || loading}
-          className={`w-full py-4 text-lg font-black uppercase tracking-widest transition-all clip-path-polygon relative group overflow-hidden ${
+          className={`w-full py-4 text-2xl font-black h-24 uppercase tracking-widest transition-all clip-path-polygon relative group overflow-hidden ${
             !isValidConfig 
               ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
               : isRolling 
                 ? 'bg-[#FF4655] text-white cursor-wait'
-                : 'bg-[#FF4655] hover:bg-[#ff2b3d] text-white shadow-[0_0_20px_rgba(255,70,85,0.4)]'
+                : 'bg-[#FF4655] hover:bg-[#b72733] text-white shadow-[0_0_20px_rgba(255,70,85,0.4)]'
           }`}
           style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
-            {isRolling ? <RefreshCw className="animate-spin" /> : <Play fill="currentColor" />}
-            {isRolling ? 'Decrypting...' : 'Lock In'}
+            {!isValidConfig ?  "" : isRolling ? <RefreshCw className="animate-spin" /> : <Play fill="currentColor" />}
+            {!isValidConfig ? 'Select agent' : isRolling ? 'Decrypting...' : 'Lock In'}
           </span>
         </button>
-        {!isValidConfig && (
-          <div className="flex items-center gap-2 mt-3 text-red-400 text-xs bg-red-900/20 p-2 border border-red-900/50">
-            <AlertTriangle size={14} />
-            <span>Not enough agents selected for squad size.</span>
-          </div>
-        )}
       </div>
       
       <button
         onClick={resetApp}
         disabled={isRolling}
-        className={`w-full py-3 text-xs font-bold uppercase tracking-widest transition-all border border-gray-700 hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center gap-2 ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`w-full h-8 text-[10px] font-bold uppercase tracking-widest transition-all border border-gray-700 hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center gap-2 ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <RotateCcw size={14} />
-        Reset Config
+        Reset
       </button>
     </div>
   );
