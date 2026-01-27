@@ -2,8 +2,13 @@ import { useState } from 'react';
 import HistoryTable from './HistoryTable';
 import RecapTable from './RecapTable';
 import RecapChart from './RecapChart';
+import type { PickLog } from '../../lib/api';
 
-export default function StatisticsView() {
+interface StatisticsViewProps {
+  onRestore?: (log: PickLog) => void;
+}
+
+export default function StatisticsView({ onRestore }: StatisticsViewProps) {
   const [activeTab, setActiveTab] = useState<'history' | 'recap_table' | 'recap_chart'>('history');
 
   return (
@@ -30,7 +35,7 @@ export default function StatisticsView() {
        </div>
 
        <div className="min-h-[400px]">
-          {activeTab === 'history' && <HistoryTable />}
+          {activeTab === 'history' && <HistoryTable onRestore={onRestore} />}
           {activeTab === 'recap_table' && <RecapTable />}
           {activeTab === 'recap_chart' && <RecapChart />}
        </div>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import type { PickLog } from './lib/api';
 import Header from './components/layout/Header';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -6,6 +7,7 @@ import AgentRevealSection from './components/agent/AgentRevealSection';
 import AgentControlPanel from './components/agent/AgentControlPanel';
 import AgentPoolGrid from './components/agent/AgentPoolGrid';
 import AgentWallpaper from './components/agent/AgentWallpaper';
+import CinematicWallpaper from './components/agent/CinematicWallpaper';
 import WeaponRandomizer from './components/weapon/WeaponRandomizer';
 import StatisticsSection from './components/stats/StatisticsSection';
 
@@ -18,8 +20,9 @@ export default function App() {
   
   const [currentView, setCurrentView] = useState<'agent' | 'weapon' | 'statistics'>('agent');
   const [playerCount, setPlayerCount] = useState(5);
-  const [gameMode, setGameMode] = useState<'full' | 'balance'>('balance');
+  const [gameMode, setGameMode] = useState<'full' | 'balance'>('full');
   const [playerNames, setPlayerNames] = useState<string[]>(['', '', '', '', '']);
+  const [isRestoring, setIsRestoring] = useState(false);
   
   const {
     excludedAgentIds,
@@ -35,8 +38,10 @@ export default function App() {
     setIsRolling,
     rollResults,
     finalizedCount,
+    setFinalizedCount,
     startRandomizer,
-    resetRandomizer
+    resetRandomizer,
+    setRollResults
   } = useRandomizer({
     agents,
     pool,
@@ -48,17 +53,33 @@ export default function App() {
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isRolling && resultsRef.current) {
+    if ((isRolling || isRestoring) && resultsRef.current) {
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     }
-  }, [isRolling]);
+  }, [isRolling, isRestoring]);
 
   const updatePlayerName = (index: number, name: string) => {
     const newNames = [...playerNames];
     newNames[index] = name;
     setPlayerNames(newNames);
+  };
+
+  const handleRestoreSquad = (log: PickLog) => {
+    setIsRestoring(true);
+    setCurrentView('agent');
+    setPlayerCount(log.picked_agents.length);
+    setGameMode(log.mode as 'full' | 'balance');
+    setFinalizedCount(0);
+    setRollResults(Array(log.picked_agents.length).fill(null));
+
+    // Simulate loading delay
+    setTimeout(() => {
+        setRollResults(log.picked_agents);
+        setFinalizedCount(log.picked_agents.length);
+        setIsRestoring(false);
+    }, 1500); 
   };
 
   const resetApp = () => {
@@ -104,7 +125,7 @@ export default function App() {
                   isRolling={isRolling}
                   startRandomizer={startRandomizer}
                   resetApp={resetApp}
-                  isValidConfig={isValidConfig}
+                  isValidConfig={gameMode === 'balance' ? true : isValidConfig}
                   loading={loading}
                 />
 
@@ -115,6 +136,7 @@ export default function App() {
                   toggleAgentExclusion={toggleAgentExclusion}
                   isRolling={isRolling}
                   poolSize={pool.length}
+                  gameMode={gameMode}
                 />
               </div>
             </section>
@@ -124,14 +146,19 @@ export default function App() {
               rollResults={rollResults}
               finalizedCount={finalizedCount}
               isRolling={isRolling}
+              isRestoring={isRestoring}
               playerNames={playerNames}
               updatePlayerName={updatePlayerName}
               resultsRef={resultsRef}
             />
 
-            {((!isRolling && finalizedCount === playerCount) || isRolling) && playerCount > 0 && (
-               <AgentWallpaper agents={rollResults} isRolling={isRolling} />
+            {((!isRolling && finalizedCount === playerCount) || isRolling || isRestoring) && playerCount > 0 && (
+               <AgentWallpaper agents={rollResults} isRolling={isRolling} isRestoring={isRestoring} />
             )}
+
+            {(!isRolling && finalizedCount === playerCount && playerCount > 0) || isRestoring ? (
+                <CinematicWallpaper agents={rollResults} isRestoring={isRestoring} />
+            ) : null}
 
           </>
         ) : currentView === 'weapon' ? (
@@ -141,7 +168,7 @@ export default function App() {
               setIsRolling={setIsRolling} 
            />
         ) : (
-           <StatisticsSection />
+           <StatisticsSection onRestore={handleRestoreSquad} />
         )}
 
       </main>

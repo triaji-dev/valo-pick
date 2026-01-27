@@ -1,7 +1,12 @@
 import { BarChart2 } from 'lucide-react';
 import StatisticsView from './StatisticsView';
+import type { PickLog } from '../../lib/api';
 
-export default function StatisticsSection() {
+interface StatisticsSectionProps {
+  onRestore?: (log: PickLog) => void;
+}
+
+export default function StatisticsSection({ onRestore }: StatisticsSectionProps) {
   return (
     <section className="bg-[#1c252e] border border-gray-700 rounded-lg p-6 shadow-xl">
       <div className="flex items-center gap-4 mb-6">
@@ -11,7 +16,7 @@ export default function StatisticsSection() {
           <p className="text-gray-400 text-xs font-mono uppercase tracking-widest">History & Analytics Protocol</p>
         </div>
       </div>
-      <StatisticsView />
+      <StatisticsView onRestore={onRestore} />
     </section>
   );
 }

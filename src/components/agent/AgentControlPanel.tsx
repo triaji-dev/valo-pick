@@ -58,6 +58,21 @@ export default function AgentControlPanel({
         <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 block">Mode</label>
         <div className="flex bg-[#0F1923] p-1 border border-gray-700">
           <button
+            onClick={() => !isRolling && setGameMode('full')}
+            disabled={isRolling}
+            className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
+              gameMode === 'full'
+                ? 'bg-[#FF4655] text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            Chaos
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
+              Random agents from the pool
+              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
+            </div>
+          </button>
+          <button
             onClick={() => !isRolling && playerCount >= 2 && setGameMode('balance')}
             disabled={isRolling || playerCount < 2}
             className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
@@ -72,27 +87,15 @@ export default function AgentControlPanel({
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
             </div>
           </button>
-          <button
-            onClick={() => !isRolling && setGameMode('full')}
-            disabled={isRolling}
-            className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
-              gameMode === 'full'
-                ? 'bg-[#FF4655] text-white shadow-lg'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
-            } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            Full Random
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
-              Random agents from the pool
-              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
-            </div>
-          </button>
         </div>
       </div>
 
-      <div>
-        <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 block">Role Filter</label>
-        <div className="grid grid-cols-2 gap-2">
+      <div className="relative">
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-gray-400 text-xs font-bold uppercase tracking-widest block">Role Filter</label>
+        </div>
+        
+        <div className={`grid grid-cols-2 gap-2 transition-all duration-300 ${gameMode === 'balance' ? 'opacity-20 pointer-events-none' : ''}`}>
           {Object.keys(ROLES).map(role => {
             const roleAgents = agents.filter(a => a.role?.displayName === role);
             const totalInRole = roleAgents.length;
@@ -125,6 +128,7 @@ export default function AgentControlPanel({
             );
           })}
         </div>
+
       </div>
 
       <div className="">

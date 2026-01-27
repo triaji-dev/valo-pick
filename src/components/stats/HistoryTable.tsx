@@ -1,9 +1,13 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { api, type PickLog } from '../../lib/api';
 import { format } from 'date-fns';
-import { Trash2, Check, X } from 'lucide-react';
+import { Trash2, Check, X, RotateCcw } from 'lucide-react';
 
-export default function HistoryTable() {
+interface HistoryTableProps {
+  onRestore?: (log: PickLog) => void;
+}
+
+export default function HistoryTable({ onRestore }: HistoryTableProps) {
   const [logs, setLogs] = useState<PickLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -110,13 +114,24 @@ export default function HistoryTable() {
                     </button>
                   </div>
                 ) : (
-                  <button 
-                    onClick={() => setConfirmDeleteId(log.id)}
-                    className="p-2 text-gray-500 hover:text-red-500 transition-colors"
-                    title="Delete Log"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex gap-2 justify-end">
+                      {onRestore && (
+                        <button
+                            onClick={() => onRestore(log)}
+                            className="p-2 text-blue-400 hover:text-white hover:bg-blue-500/20 rounded transition-all"
+                            title="Restore Squad & Pick"
+                        >
+                            <RotateCcw size={16} />
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => setConfirmDeleteId(log.id)}
+                        className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                        title="Delete Log"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                  </div>
                 )}
               </td>
             </tr>

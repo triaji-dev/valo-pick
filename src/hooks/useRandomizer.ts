@@ -26,6 +26,7 @@ export const useRandomizer = ({
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    setFinalizedCount(0);
     setRollResults(prev => {
       if (prev.length !== playerCount) {
         return Array(playerCount).fill(null);
@@ -35,7 +36,8 @@ export const useRandomizer = ({
   }, [playerCount]);
 
   const startRandomizer = useCallback(() => {
-    if (pool.length < playerCount || isRolling) return;
+    const effectivePool = gameMode === 'balance' ? agents : pool;
+    if (effectivePool.length < playerCount || isRolling) return;
 
     setIsRolling(true);
     setFinalizedCount(0);
@@ -44,7 +46,7 @@ export const useRandomizer = ({
     let revealedLocal = 0; 
 
     rollIntervalRef.current = setInterval(() => {
-      const shuffledAnim = [...pool];
+      const shuffledAnim = [...effectivePool];
       for (let i = shuffledAnim.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffledAnim[i], shuffledAnim[j]] = [shuffledAnim[j], shuffledAnim[i]];
@@ -65,7 +67,12 @@ export const useRandomizer = ({
       });
     }, 80); 
 
-    const finalSelection = generateAgentSelection(gameMode, playerCount, agents, excludedAgentIds);
+    const finalSelection = generateAgentSelection(
+        gameMode, 
+        playerCount, 
+        agents, 
+        gameMode === 'balance' ? new Set() : excludedAgentIds
+    );
 
     setTimeout(() => {
       const revealNext = () => {
@@ -115,6 +122,7 @@ export const useRandomizer = ({
     setIsRolling, 
     rollResults,
     finalizedCount,
+    setFinalizedCount,
     startRandomizer,
     resetRandomizer,
     setRollResults 

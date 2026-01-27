@@ -1,8 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import type { Agent } from '../../types';
 import RoleIcon from '../ui/RoleIcon';
-import { Download, Loader2 } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { Loader2 } from 'lucide-react';
 
 const THEMES = [
   {
@@ -133,11 +132,11 @@ const PATTERNS = [
 interface AgentWallpaperProps {
   agents: (Agent | null)[];
   isRolling?: boolean;
+  isRestoring?: boolean;
 }
 
-export default function AgentWallpaper({ agents, isRolling = false }: AgentWallpaperProps) {
+export default function AgentWallpaper({ agents, isRolling = false, isRestoring = false }: AgentWallpaperProps) {
   const wallpaperRef = useRef<HTMLDivElement>(null);
-  const [downloading, setDownloading] = useState(false);
   const [theme, setTheme] = useState(() => THEMES[Math.floor(Math.random() * THEMES.length)]);
   const [pattern, setPattern] = useState(() => PATTERNS[Math.floor(Math.random() * PATTERNS.length)]);
   
@@ -199,47 +198,24 @@ export default function AgentWallpaper({ agents, isRolling = false }: AgentWallp
     };
   };
 
-  const handleDownload = async () => {
-    if (!wallpaperRef.current) return;
-    setDownloading(true);
-    try {
-        const canvas = await html2canvas(wallpaperRef.current, {
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#0F1923', 
-            scale: 2
-        });
-        const link = document.createElement('a');
-        link.download = `valopick-squad-${theme.id}-${new Date().getTime()}.png`;
-        link.href = canvas.toDataURL();
-        link.click();
-    } catch (e) {
-        console.error("Download failed", e);
-    } finally {
-        setDownloading(false);
-    }
-  };
-
   if(!isRolling && validAgents.length === 0) return null;
 
   return (
     <section className="w-full flex flex-col gap-4 animate-in fade-in zoom-in duration-1000 slide-in-from-bottom-10">
-        <div className="flex justify-between items-end px-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
-                <h3 className="text-xl font-black uppercase italic tracking-tighter text-white/50">Squad <span className={theme.textAccent}>
+                <h3 className="text-xl font-black uppercase italic tracking-tighter text-white/50">Squad <span className="text-[#FF4655]">
                   {isRolling ? "Generating..." : "Assemble"}
                 </span></h3>
             </div>
-            <button 
-                onClick={handleDownload}
-                disabled={downloading || isRolling}
-                className={`flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold uppercase tracking-widest rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-                {downloading ? "Saving..." : <><Download size={14} /> Save Wallpaper</>}
-            </button>
+            
+            <div className="flex gap-2 w-full md:w-auto">
+                {/* Save Wallpaper button removed */}
+            </div>
         </div>
 
         <div 
+            id="agent-wallpaper"
             ref={wallpaperRef}
             className={`relative w-full aspect-[21/11] md:aspect-[2.1/1] overflow-hidden rounded-lg shadow-2xl border border-gray-800 group transition-all duration-500 ${isRolling ? 'opacity-80' : 'opacity-100'} ${theme.base}`}
         >
@@ -270,13 +246,15 @@ export default function AgentWallpaper({ agents, isRolling = false }: AgentWallp
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
             </div>
 
-            {isRolling ? (
+            {(isRolling || isRestoring) ? (
                <div className="absolute inset-0 flex items-center justify-center flex-col gap-4 z-50">
                    <div className="relative">
                       <div className="absolute inset-0 blur-xl opacity-20 animate-pulse" style={{ backgroundColor: theme.accent }} />
                       <Loader2 size={48} className="animate-spin relative z-10" style={{ color: theme.accent }} />
                    </div>
-                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50 animate-pulse">Forging Composition</p>
+                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50 animate-pulse">
+                      {isRestoring ? "Restoring Composition" : "Forging Composition"}
+                   </p>
                    
                </div>
             ) : (
@@ -314,16 +292,16 @@ export default function AgentWallpaper({ agents, isRolling = false }: AgentWallp
                                   className="absolute bottom-0 w-[40%] md:w-[40%] transition-all duration-500 origin-bottom"
                                   style={style}
                               >
-                                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center ">
+                                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center opacity-0 group-hover:opacity-100 transition-all  duration-500">
                                       <h4 
-                                        className="text-white font-black uppercase text-xl md:text-3xl italic tracking-tighter drop-shadow-md whitespace-nowrap"
+                                        className="text-white font-black uppercase text-xs md:text-3xl italic tracking-tighter drop-shadow-md whitespace-nowrap"
                                         style={{ textShadow: '0 4px 8px rgba(0,0,0,0.8)' }}
                                       >
                                           {agent.displayName}
                                       </h4>
-                                      <div className="flex items-center justify-center gap-1 text-white/80 drop-shadow-md opacity-0 group-hover:opacity-100 transition-all  duration-500">
+                                      <div className="flex items-center justify-center gap-1 text-white/80 drop-shadow-md">
                                            <RoleIcon role={agent.role?.displayName} className="w-4 h-4" />
-                                           <span className="text-[10px] font-bold uppercase tracking-widest">{agent.role?.displayName}</span>
+                                           <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest">{agent.role?.displayName}</span>
                                       </div>
                                   </div>
                               </div>

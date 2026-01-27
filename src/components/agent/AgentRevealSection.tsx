@@ -8,6 +8,7 @@ interface AgentRevealSectionProps {
   rollResults: (Agent | null)[];
   finalizedCount: number;
   isRolling: boolean;
+  isRestoring?: boolean;
   playerNames: string[];
   updatePlayerName: (index: number, name: string) => void;
   resultsRef: LegacyRef<HTMLElement>;
@@ -18,17 +19,46 @@ export default function AgentRevealSection({
   rollResults,
   finalizedCount,
   isRolling,
+  isRestoring = false,
   playerNames,
   updatePlayerName,
   resultsRef,
 }: AgentRevealSectionProps) {
+  const progress = playerCount > 0 ? (finalizedCount / playerCount) * 100 : 0;
+
   return (
-    <section ref={resultsRef} className="flex-1 flex flex-col justify-center items-center min-h-[300px] scroll-mt-32">
+    <section ref={resultsRef} className="flex-1 flex flex-col justify-center items-center min-h-[300px] scroll-mt-32 w-full">
+      {/* Reveal Progress Bar */}
+      <div className="w-full max-w-6xl mb-8 space-y-2 px-4 md:px-0">
+        <div className="flex justify-between items-end">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FF4655]">Status // Sequence</span>
+            <span className="text-xl font-black uppercase italic tracking-tighter text-white">
+              {isRolling ? "Analyzing Tactical Data..." : finalizedCount === playerCount ? "Squad Finalized" : "Lockdown Progress"}
+            </span>
+          </div>
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] font-mono text-gray-500 uppercase">{finalizedCount} / {playerCount} Agents Ready</span>
+            <span className="text-2xl font-black italic text-white leading-none">{Math.round(progress)}%</span>
+          </div>
+        </div>
+        
+        <div className="h-1.5 w-full bg-[#1c252e] rounded-full overflow-hidden border border-gray-800 relative">
+          <div 
+            className="h-full bg-[#FF4655] transition-all duration-500 ease-out relative"
+            style={{ width: `${progress}%` }}
+          >
+            {/* Glow effect */}
+            <div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-white/30 blur-sm" />
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 w-full">
         {Array.from({ length: playerCount }).map((_, idx) => {
           const agent = rollResults[idx];
           const isFinalized = idx < finalizedCount;
-          const isEmpty = !agent && !isRolling;
+          const isEmpty = !agent && !isRolling && !isRestoring;
 
           return (
             <div key={idx} className="flex flex-col gap-2 w-full">
@@ -39,7 +69,7 @@ export default function AgentRevealSection({
                   value={playerNames[idx]}
                   onChange={(e) => updatePlayerName(idx, e.target.value)}
                   placeholder={`PLAYER ${idx + 1}`}
-                  disabled={isRolling}
+                  disabled={isRolling || isRestoring}
                   className="relative w-full bg-transparent border-b border-gray-700 text-[10px] font-black text-gray-400 focus:text-white tracking-[0.2em] py-2 text-center focus:outline-none focus:border-[#FF4655] placeholder:text-gray-700 uppercase transition-all font-mono"
                 />
               </div>
@@ -48,6 +78,8 @@ export default function AgentRevealSection({
                 className={`group relative w-full border-2 transition-all duration-300 transform flex flex-row md:block h-28 md:h-auto md:aspect-[3/4] ${
                 isEmpty 
                   ? 'bg-[#1c252e] border-gray-800 border-dashed opacity-50' 
+                  : isRestoring 
+                    ? 'bg-[#1c252e] border-[#FF4655]/50 animate-pulse shadow-[0_0_15px_rgba(255,70,85,0.2)]'
                   : `bg-transparent md:bg-[#1c252e] ${isFinalized 
                     ? 'border-[#FF4655] scale-100 md:scale-105 shadow-[0_0_30px_rgba(255,70,85,0.2)] z-10' 
                     : 'border-white/20'}`
