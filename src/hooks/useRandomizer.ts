@@ -25,12 +25,15 @@ export const useRandomizer = ({
   const rollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Initialize results array size when playerCount changes, if not rolling
+  // Ensure results array matches playerCount, but preserve values if length matches
   useEffect(() => {
-    if (!isRolling) {
-      setRollResults(Array(playerCount).fill(null));
-    }
-  }, [playerCount, isRolling]);
+    setRollResults(prev => {
+      if (prev.length !== playerCount) {
+        return Array(playerCount).fill(null);
+      }
+      return prev;
+    });
+  }, [playerCount]);
 
   const startRandomizer = useCallback(() => {
     if (pool.length < playerCount || isRolling) return;
@@ -51,9 +54,7 @@ export const useRandomizer = ({
       }
       
       setRollResults(prev => {
-         // Create a new array based on current playerCount (dynamic safety)
          const next = [...prev];
-         // Ensure array size matches
          if (next.length !== playerCount) {
              return Array(playerCount).fill(null).map((_, i) => shuffledAnim[i % shuffledAnim.length]);
          }
@@ -67,10 +68,8 @@ export const useRandomizer = ({
       });
     }, 80); 
 
-    // Generate Final Selection
     const finalSelection = generateAgentSelection(gameMode, playerCount, agents, excludedAgentIds);
 
-    // Reveal Logic
     setTimeout(() => {
       const revealNext = () => {
         if (revealedLocal < playerCount) {
@@ -78,7 +77,6 @@ export const useRandomizer = ({
 
           setRollResults(prev => {
             const next = [...prev];
-            // Safety check
             if (next[currentIndex] !== undefined && finalSelection[currentIndex]) {
                 next[currentIndex] = finalSelection[currentIndex];
             }
@@ -108,7 +106,6 @@ export const useRandomizer = ({
     if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
   }, [playerCount]);
 
-  // Cleanup
   useEffect(() => {
     return () => {
       if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
@@ -118,11 +115,11 @@ export const useRandomizer = ({
 
   return {
     isRolling,
-    setIsRolling, // Exposed for WeaponRandomizer if needed? App.tsx passed setIsRolling to WeaponRandomizer
+    setIsRolling, 
     rollResults,
     finalizedCount,
     startRandomizer,
     resetRandomizer,
-    setRollResults // Exposed if needed
+    setRollResults 
   };
 };

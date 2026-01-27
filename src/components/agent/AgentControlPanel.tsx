@@ -44,7 +44,7 @@ export default function AgentControlPanel({
               disabled={isRolling}
               className={`flex-1 py-2 text-sm font-bold transition-all ${
                 playerCount === num 
-                  ? 'bg-[#FF4655]/50 text-white shadow-lg' 
+                  ? 'bg-[#FF4655] text-white shadow-lg' 
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -62,7 +62,7 @@ export default function AgentControlPanel({
             disabled={isRolling || playerCount < 2}
             className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
               gameMode === 'balance'
-                ? 'bg-[#FF4655]/50 text-white shadow-lg'
+                ? 'bg-[#FF4655] text-white shadow-lg'
                 : 'text-gray-400 hover:text-white hover:bg-white/5'
             } ${isRolling || playerCount < 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
@@ -118,7 +118,7 @@ export default function AgentControlPanel({
                         : `${config.bgAll} ${config.borderAll} ${config.colorAll} border-opacity-100`
                 } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <Icon size={16} className={isAllBanned ? "grayscale" : ""} />
+                <Icon size={16} className={`${isAllBanned ? "grayscale" : ""} h-6 w-6`} />
                 {role}
                 {isMixed && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-current opacity-70" />}
               </button>
