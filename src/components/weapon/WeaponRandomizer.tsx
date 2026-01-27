@@ -55,11 +55,10 @@ export default function WeaponRandomizer({ weapons, isRolling, setIsRolling }: W
             <p className="text-gray-400 text-sm">Let the protocol decide.</p>
          </div>
 
-         {/* Category Filter */}
          <div className="flex flex-wrap justify-center gap-2 max-w-4xl">
             {Object.keys(WEAPON_CATEGORIES).map(cat => {
               const isActive = selectedCategories.includes(cat);
-              // Find a representative weapon for icon
+              
               let repWeapon;
               if (cat === 'Pistol') {
                  repWeapon = weapons.find(w => w.displayName === 'Classic');
@@ -105,8 +104,8 @@ export default function WeaponRandomizer({ weapons, isRolling, setIsRolling }: W
                    <Crosshair size={48} className="opacity-20" />
                    <span className="text-xs font-mono uppercase tracking-widest opacity-50">System Ready</span>
                 </div>
-            )}
-             {/* Background Decoration */}
+             )}
+             
              <div className="absolute inset-0 bg-[#FF4655]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
          </div>
   

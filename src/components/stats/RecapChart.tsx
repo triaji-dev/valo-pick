@@ -8,7 +8,6 @@ export default function RecapChart() {
 
   useEffect(() => {
     api.getRecap().then(res => {
-      // Top 10 only for chart
       setData(res);
       setLoading(false);
     });
@@ -35,7 +34,6 @@ export default function RecapChart() {
 
 
   
-  // Calculate dynamic height: 50px per bar, min 400px
   const chartHeight = Math.max(400, data.length * 50);
 
   return (

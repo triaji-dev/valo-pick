@@ -17,5 +17,5 @@ export interface Weapon {
   uuid: string;
   displayName: string;
   displayIcon: string;
-  category: string; // e.g., "EEquippableCategory::Rifle"
+  category: string;
 }

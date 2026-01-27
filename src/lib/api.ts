@@ -1,5 +1,3 @@
-// Basic API client for interacting with our Express backend
-
 const API_BASE = import.meta.env.PROD 
   ? '/api' 
   : 'http://localhost:3001/api';
@@ -8,7 +6,7 @@ export interface PickLog {
   id: string;
   created_at: string;
   mode: string;
-  picked_agents: any[]; // JSON array
+  picked_agents: any[];
 }
 
 export interface AgentRecap {
@@ -19,7 +17,6 @@ export interface AgentRecap {
 }
 
 export const api = {
-  // Log a new pick session
   logPick: async (mode: string, pickedAgents: any[]) => {
     try {
       const response = await fetch(`${API_BASE}/picks`, {
@@ -33,12 +30,10 @@ export const api = {
       return await response.json();
     } catch (err) {
       console.error("API Error (logPick):", err);
-      // Fail silently so we don't block the UI
       return null;
     }
   },
 
-  // Get pick history
   getHistory: async (limit = 20, offset = 0): Promise<PickLog[]> => {
     try {
       const response = await fetch(`${API_BASE}/picks?limit=${limit}&offset=${offset}`);
@@ -50,7 +45,6 @@ export const api = {
     }
   },
 
-  // Get aggregated stats
   getRecap: async (): Promise<AgentRecap[]> => {
     try {
       const response = await fetch(`${API_BASE}/stats/recap`);
@@ -62,7 +56,6 @@ export const api = {
     }
   },
 
-  // Delete a log
   deletePick: async (id: string): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE}/picks/${id}`, {

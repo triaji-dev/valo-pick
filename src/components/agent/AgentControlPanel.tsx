@@ -1,13 +1,15 @@
 import { RotateCcw, RefreshCw, Play, AlertTriangle } from 'lucide-react';
 import { ROLES } from '../../constants';
+import type { Agent } from '../../types';
 
 interface AgentControlPanelProps {
   playerCount: number;
   setPlayerCount: (n: number) => void;
   gameMode: 'full' | 'balance';
   setGameMode: (m: 'full' | 'balance') => void;
-  selectedRoles: string[];
-  toggleRole: (role: string) => void;
+  agents: Agent[];
+  excludedAgentIds: Set<string>;
+  handleRoleClick: (role: string) => void;
   isRolling: boolean;
   startRandomizer: () => void;
   resetApp: () => void;
@@ -20,8 +22,9 @@ export default function AgentControlPanel({
   setPlayerCount,
   gameMode,
   setGameMode,
-  selectedRoles,
-  toggleRole,
+  agents,
+  excludedAgentIds,
+  handleRoleClick,
   isRolling,
   startRandomizer,
   resetApp,
@@ -31,7 +34,6 @@ export default function AgentControlPanel({
   return (
     <div className="lg:col-span-4 flex flex-col gap-6">
       
-      {/* Player Count */}
       <div>
         <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 block">Squad Size</label>
         <div className="flex bg-[#0F1923] p-1 rounded border border-gray-700">
@@ -52,22 +54,21 @@ export default function AgentControlPanel({
         </div>
       </div>
 
-      {/* Game Mode Selection */}
       <div>
         <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 block">Mode</label>
         <div className="flex bg-[#0F1923] p-1 rounded border border-gray-700">
           <button
-            onClick={() => !isRolling && playerCount >= 4 && setGameMode('balance')}
-            disabled={isRolling || playerCount < 4}
+            onClick={() => !isRolling && playerCount >= 2 && setGameMode('balance')}
+            disabled={isRolling || playerCount < 2}
             className={`flex-1 py-2 text-xs font-bold uppercase transition-all relative group ${
               gameMode === 'balance'
                 ? 'bg-[#FF4655] text-white shadow-lg'
                 : 'text-gray-400 hover:text-white hover:bg-white/5'
-            } ${isRolling || playerCount < 4 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            } ${isRolling || playerCount < 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Balance
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-gray-200 text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case font-medium border border-gray-600">
-              {playerCount < 4 ? "Requires Squad Size 4+" : "1 Duelist, 1 Initiator, 1 Controller, 1 Sentinel guaranteed"}
+              {playerCount < 2 ? "Requires Squad Size 2+" : playerCount < 4 ? "Unique roles guaranteed" : "Roles distributed as evenly as possible"}
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-600"></div>
             </div>
           </button>
@@ -89,34 +90,43 @@ export default function AgentControlPanel({
         </div>
       </div>
 
-      {/* Role Filter */}
       <div>
         <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3 block">Role Filter</label>
         <div className="grid grid-cols-2 gap-2">
           {Object.keys(ROLES).map(role => {
-            const isActive = selectedRoles.includes(role);
+            const roleAgents = agents.filter(a => a.role?.displayName === role);
+            const totalInRole = roleAgents.length;
+            const bannedInRole = roleAgents.filter(a => excludedAgentIds.has(a.uuid)).length;
+            
+            const isAllBanned = totalInRole > 0 && bannedInRole === totalInRole;
+            const isMixed = bannedInRole > 0 && bannedInRole < totalInRole;
+
             const config = ROLES[role];
             const Icon = config.icon;
+            
             return (
               <button
                 key={role}
-                onClick={() => !isRolling && toggleRole(role)}
+                onClick={() => !isRolling && handleRoleClick(role)}
                 disabled={isRolling}
+                title={isAllBanned ? "Click to enable all" : "Click to ban all"}
                 className={`flex items-center gap-2 px-3 py-2 rounded border transition-all text-sm font-medium ${
-                  isActive 
-                    ? `${config.bg} ${config.border} ${config.color} border-opacity-100` 
-                    : 'bg-[#0F1923] border-gray-700 text-gray-500 hover:border-gray-500'
+                  isAllBanned 
+                    ? 'bg-[#0F1923] border-gray-700 text-gray-500 hover:border-gray-500 opacity-60'
+                    : isMixed
+                        ? `${config.bg} ${config.border} ${config.color} border-dashed bg-opacity-30`
+                        : `${config.bg} ${config.border} ${config.color} border-opacity-100`
                 } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <Icon size={16} />
+                <Icon size={16} className={isAllBanned ? "grayscale" : ""} />
                 {role}
+                {isMixed && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-current opacity-70" />}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Action Button */}
       <div className="mt-auto pt-4">
         <button
           onClick={startRandomizer}
@@ -143,7 +153,6 @@ export default function AgentControlPanel({
         )}
       </div>
       
-      {/* Reset Button */}
       <button
         onClick={resetApp}
         disabled={isRolling}

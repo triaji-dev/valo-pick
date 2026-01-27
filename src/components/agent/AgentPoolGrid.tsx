@@ -5,7 +5,6 @@ import RoleIcon from '../ui/RoleIcon';
 interface AgentPoolGridProps {
   agents: Agent[];
   loading: boolean;
-  selectedRoles: string[];
   excludedAgentIds: Set<string>;
   toggleAgentExclusion: (uuid: string) => void;
   isRolling: boolean;
@@ -15,7 +14,6 @@ interface AgentPoolGridProps {
 export default function AgentPoolGrid({
   agents,
   loading,
-  selectedRoles,
   excludedAgentIds,
   toggleAgentExclusion,
   isRolling,
@@ -41,10 +39,8 @@ export default function AgentPoolGrid({
           {agents
             .sort((a,b) => a.displayName.localeCompare(b.displayName))
             .map(agent => {
-              const roleName = agent.role?.displayName;
-              const isRoleActive = roleName ? selectedRoles.includes(roleName) : false;
               const isExcluded = excludedAgentIds.has(agent.uuid);
-              const isAvailable = isRoleActive && !isExcluded;
+              const isAvailable = !isExcluded;
 
               return (
                 <button
@@ -63,13 +59,12 @@ export default function AgentPoolGrid({
                     alt={agent.displayName}
                     className="w-full h-full object-cover transition-transform group-hover:scale-110" 
                   />
-                  {/* Ban Overlay */}
                   {isExcluded && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                       <X className="text-red-500 w-8 h-8" />
                     </div>
                   )}
-                  {/* Role Indicator (Tiny) */}
+                  
                   <div className={`absolute bottom-0 right-0 p-0.5 bg-black/80 ${!isAvailable && 'hidden'}`}>
                      <RoleIcon role={agent.role?.displayName} className="w-3 h-3" />
                   </div>
