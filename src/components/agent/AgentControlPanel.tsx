@@ -54,6 +54,7 @@ export default function AgentControlPanel({
         </div>
       </div>
 
+      {/* Chaos vs Balance */}
       <div>
         <label className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1 block">Mode</label>
         <div className="flex bg-[#0F1923] p-1 border border-gray-700">
@@ -90,6 +91,7 @@ export default function AgentControlPanel({
         </div>
       </div>
 
+      {/* Role Filter */}
       <div className="relative">
         <div className="flex items-center justify-between mb-3">
           <label className="text-gray-400 text-xs font-bold uppercase tracking-widest block">Role Filter</label>
@@ -115,10 +117,10 @@ export default function AgentControlPanel({
                 title={isAllBanned ? "Click to enable all" : "Click to ban all"}
                 className={`flex items-center gap-2 px-3 py-2 border transition-all text-sm font-medium ${
                   isAllBanned 
-                    ? 'bg-[#0F1923] border-gray-700 text-gray-500 hover:border-gray-500 opacity-60'
+                    ?  `bg-[#0F1923] border-gray-700 text-gray-500 hover:border-gray-500 opacity-60 hover:${config.colorAll}/30`
                     : isMixed
-                        ? `${config.bg} ${config.border} ${config.color} border-dashed bg-opacity-30`
-                        : `${config.bgAll} ${config.borderAll} ${config.colorAll} border-opacity-100`
+                        ? `${config.bg} ${config.border} ${config.color} border-dashed bg-opacity-30 hover:opacity-50 hover:${config.color}/50`
+                        : `${config.bgAll} ${config.borderAll} ${config.colorAll} border-opacity-100 hover:opacity-75 hover:${config.colorAll}/50`
                 } ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Icon size={16} className={`${isAllBanned ? "grayscale" : ""} h-6 w-6`} />
