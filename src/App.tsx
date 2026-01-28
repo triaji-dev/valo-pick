@@ -83,9 +83,6 @@ export default function App() {
   };
 
   const resetApp = () => {
-    setPlayerCount(5);
-    setGameMode('balance');
-    setPlayerNames(['', '', '', '', '']);
     resetFilter();
     resetRandomizer();
   };
