@@ -133,6 +133,15 @@ export default function AgentControlPanel({
 
       </div>
 
+      <button
+        onClick={resetApp}
+        disabled={isRolling}
+        className={`w-full h-8 text-[10px] font-bold uppercase tracking-widest transition-all border border-gray-700 hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center gap-2 ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        <RotateCcw size={14} />
+        Reset Filter
+      </button>
+
       <div className="">
         <button
           onClick={startRandomizer}
@@ -152,15 +161,6 @@ export default function AgentControlPanel({
           </span>
         </button>
       </div>
-      
-      <button
-        onClick={resetApp}
-        disabled={isRolling}
-        className={`w-full h-8 text-[10px] font-bold uppercase tracking-widest transition-all border border-gray-700 hover:bg-white/5 text-gray-400 hover:text-white flex items-center justify-center gap-2 ${isRolling ? 'opacity-50 cursor-not-allowed' : ''}`}
-      >
-        <RotateCcw size={14} />
-        Reset
-      </button>
     </div>
   );
 }
