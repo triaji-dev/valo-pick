@@ -172,7 +172,11 @@ export default function App() {
             )}
 
             {(!isRolling && finalizedCount === playerCount && playerCount > 0) || isRestoring ? (
-                <CinematicWallpaper agents={rollResults} isRestoring={isRestoring} />
+                <CinematicWallpaper 
+                  agents={rollResults} 
+                  isRestoring={isRestoring} 
+                  playerNames={playerNames}
+                />
             ) : null}
 
           </>

@@ -21,15 +21,16 @@ declare global {
 }
 
 const MAPS = [
-  "Ascent", "Bind", "Haven", "Split", "Icebox", "Breeze", "Fracture", "Pearl", "Lotus", "Sunset", "Abyss"
+  "Ascent", "Bind", "Haven", "Split", "Icebox", "Breeze", "Fracture", "Pearl", "Lotus", "Sunset", "Abyss", "Corrode"
 ];
 
 interface CinematicWallpaperProps {
   agents: (Agent | null)[];
   isRestoring?: boolean;
+  playerNames?: string[];
 }
 
-export default function CinematicWallpaper({ agents, isRestoring = false }: CinematicWallpaperProps) {
+export default function CinematicWallpaper({ agents, isRestoring = false, playerNames = [] }: CinematicWallpaperProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedMap, setSelectedMap] = useState("Ascent");
   const [generatedPrompt, setGeneratedPrompt] = useState("");
@@ -54,49 +55,57 @@ export default function CinematicWallpaper({ agents, isRestoring = false }: Cine
   }, []);
 
   const generateFallbackBeats = (agents: Agent[]) => {
-    return agents.map((agent, i) => 
-      `Agent ${i+1} (${agent.displayName}): ready for action, holding a strategic position.`
-    ).join("\n");
+    return agents.map((agent, i) => {
+      const playerName = playerNames[i] || `Player ${i + 1}`;
+      return `Agent ${i + 1} (${agent.displayName}), played by ${playerName}: ready for action, holding a strategic position.`;
+    }).join("\n");
   };
 
   const constructFinalPrompt = (mapName: string, beats: string, count: number) => {
-    const agentText = count === 1 ? "one Valorant agent" : `${count} Valorant agents`;
-    const allKey = count === 1 ? "The agent remains" : `All ${count} agents remain`;
+    const agentDetails = validAgents.map((agent, i) => {
+        const playerName = playerNames[i] || `Player ${i + 1}`;
+        return `- ${agent.displayName} (played by ${playerName.toUpperCase()})`;
+    }).join("\n");
 
     return `
-SYSTEM INSTRUCTION (MANDATORY - DO NOT SKIP):
-You must NOT perform any image transformation or generation unless an image is already provided by the user (pasted directly in the chatbox).
-First, strictly perform this check:
-
-If NO image is detected, STOP immediately and respond with exactly this sentence (no additions, no variations):
+[GATEKEEPER - CRITICAL INITIAL CHECK]
+1. DO NOT PROCEED TO IMAGE TRANSFORMATION UNLESS A SOURCE IMAGE IS DETECTED/PASTED IN THE CHAT.
+2. IF NO SOURCE IMAGE IS DETECTED, STOP IMMEDIATELY.
+3. YOUR ONLY ALLOWED RESPONSE IF NO IMAGE IS DETECTED IS EXACTLY THIS SENTENCE: 
 "Provide wallpaper image generated from ValoPick. Simply copy and paste here!"
-Only proceed to the next phase AFTER an image is detected.
 
-PHASE 2 — IMAGE TRANSFORMATION TASK (ONLY IF IMAGE EXISTS):
-Transform the provided image using Nano Banana, reinterpreting ${count} Valorant agents into a natural, cinematic narrative scene set explicitly on the VALORANT map: ${mapName.toUpperCase()}, rendered in the Arcane (Riot Games) animated series style.
-The final result must feel like a story-driven animated film still, not a poster, not splash art, and not a gameplay screenshot.
+PHASE 1 — IMAGE VERIFICATION:
+Verify if the user has provided an image. 
+- IMAGE MISSING? Output the gatekeeper sentence and END the response.
+- IMAGE PRESENT? Proceed to PHASE 2.
+
+PHASE 2 — IMAGE TRANSFORMATION (ONLY IF IMAGE EXISTS):
+Transform the provided image using Nano Banana into a high-end Promotional Movie Poster / Key Art.
+VOICE: This is the official cover art for a high-budget animated series. The tone is epic, heroic, and immersive.
+REINTERPRET: ${count} agents set explicitly on ${mapName.toUpperCase()} in the Arcane (Riot Games) style.
+STRICT RULE: Produce a "Game Poster" layout. Avoid flat lineups. Focus on verticality, dramatic depth, and character-driven lighting.
+
+[IMAGE FORMAT SPECIFICATIONS]
+- Aspect Ratio: 21:11 (Ultra-wide cinematic)
+- Resolution: High-fidelity 4K rendering
+- Orientation: Landscape
 
 SCENE & LOCATION — ${mapName.toUpperCase()}:
-Scene takes place in a recognizable signature area of ${mapName}
-Authentic ${mapName} architecture, materials, crates, alleys, and urban details
-Subtle map-specific landmarks visible in the background to anchor location
-Ground shows wear: cracks, dust, chipped stone, and uneven textures
-Atmosphere feels lived-in and grounded, not futuristic or generic
-Environmental details:
-Light fabric banners or small foliage gently moving with wind
-Floating dust particles and light atmospheric haze catching sunlight
-No HUD, no UI, no gameplay indicators — purely cinematic world-building
+Scene takes place in an iconic, epic-scale area of ${mapName}.
+PROMOTIONAL COMPOSITION: Use environmental framing (archways, stone pillars, hanging vines, waterfalls) to anchor the scene. 
+EPIC VERTICALITY: Maximize the use of map geometry. Agents should be perched on ledges, leaning against high walls, or standing on ancient ruins at varied heights.
+DEPTH OF FIELD: Distinct Foreground (blurry map details), Midground (primary agents in sharp focus), and Background (atmospheric map landmarks).
+Atmosphere: High-contrast "Rembrandt" lighting. Dramatic shafts of sunlight (God rays), volumetric dust, and mist that adds immense depth.
+Environmental storytelling: Pristine vs. weathered details that reflect the map's identity (e.g., lush flora of Lotus vs. icy tech of Icebox).
+No HUD, UI, or gameplay clutter — pure Key Art quality.
 
 CHARACTER DIRECTION — ${count} AGENTS:
-Exactly ${count} agents: ${agentText}
-${allKey} high recognizable from the source image:
-Faces, outfits, proportions, silhouettes preserved
-Reinterpreted with Arcane-style painterly realism:
-Textured skin
-Visible brush strokes
-Imperfect materials
-Subtle facial micro-expressions
-Natural spacing between characters, forming a balanced cinematic composition
+${agentDetails}
+
+POSTER POSES: Agents should look heroic and prepared. Some should hold a primary weapon comfortably, others appearing to use their abilities.
+ABILITY FX: Abilities MUST be local light sources (glowing swirls, sparks, smoke, or water energy) that cast light back onto the agents' faces and outfits.
+STYLE: Arcane-style painterly textures. Exquisite detail on faces, textured fabric, and realistic metallic sheen on gadgets. 
+PLAYER LABELS: Each player's name must be integrated as a very subtle, small, and elegant minimalist "Technical Print" font near their character's base, like a high-end production credit.
 
 EMOTIONAL POSTURE (quiet tension before action):
 ${beats}
@@ -111,18 +120,17 @@ Composition follows rule of thirds
 Mid-to-low camera angle for cinematic weight
 
 LIGHTING & MOOD:
-Golden-hour lighting
-Warm highlights contrasted with cool, soft shadows
-Gentle rim light separating characters from background
-Shallow depth of field with cinematic focus falloff
-Subtle film grain
-Mood: quiet tension, a breath before conflict
+Epic Promotional Lighting.
+Brilliant warm highlights (sunlight) clashing with cool cinematic shadows.
+Strong rim light defining character silhouettes against darker map areas.
+Focus: Sharp, promotional focus on the agents, with cinematic blur on the environment.
+Mood: "The Grand Reveal"—epic, high-stakes, and visually breathtaking.
 
 TECHNICAL / QUALITY TAGS:
-Arcane-style animation, Riot Games cinematic, animated series still, ultra-detailed, painterly realism, concept art quality, volumetric lighting, global illumination, cinematic depth, 4K look
+Movie Poster style, Key Art, Arcane-animation, Riot Games aesthetic, ultra-high-definition, painterly masterpiece, god rays, ray-traced lighting, 8K wallpaper quality.
 
 NEGATIVE PROMPT:
-generic city, cyberpunk setting, sci-fi interiors, wrong Valorant map elements, non-${mapName} environments, anime style, chibi, cartoon, exaggerated proportions, splash art pose, poster layout, promotional composition, flat lighting, plastic skin, oversaturated colors, distorted anatomy, extra limbs, blurred or warped faces, text, watermark, logo, HUD, UI elements`;
+generic city, cyberpunk setting, sci-fi interiors, wrong Valorant map elements, non-${mapName} environments, anime style, chibi, cartoon, exaggerated proportions, splash art pose, poster layout, promotional composition, flat lighting, plastic skin, oversaturated colors, distorted anatomy, extra limbs, blurred or warped faces, HUD, UI elements`;
   };
 
   const generatePrompt = async () => {
@@ -130,7 +138,6 @@ generic city, cyberpunk setting, sci-fi interiors, wrong Valorant map elements, 
     setIsGenerating(true);
 
     try {
-      const agentNames = validAgents.map(a => a.displayName).join(", ");
       let emotionalBeats = "";
 
       // Try to use Gemini Nano to generate specific beats
@@ -138,17 +145,21 @@ generic city, cyberpunk setting, sci-fi interiors, wrong Valorant map elements, 
         try {
           const session = await window.ai.languageModel.create();
           
-          const agentFormat = validAgents.map((a, i) => 
-            `Agent ${i+1} (${a.displayName}): [Description]`
-          ).join("\n            ");
-
           const promptInput = `
-            Context: A cinematic group shot of ${validAgents.length} Valorant agents: ${agentNames} on the map ${selectedMap}.
-            Task: Describe a 1-sentence "Emotional beat" or pose for EACH agent in this scene.
-            Style: Arcane (Riot Games) animated film style. Grounded, emotional, immersive.
+            Context: A highly cinematic, narrative-driven group shot of ${validAgents.length} Valorant agents on the map ${selectedMap}. 
+            Style: Arcane (Riot Games) animation. This is a story-still, NOT a poster.
             
-            Format:
-            ${agentFormat}
+            Agents and their players:
+            ${validAgents.map((a, i) => `${a.displayName} (played by ${playerNames[i] || `Player ${i + 1}`})`).join("\n            ")}
+
+            Task: Describe an epic "Promotional Key Art" or "Movie Poster" pose for EACH agent.
+            LAYOUT & COMPOSITION (MOOD: Triumphant, Epic, Grounded):
+            - Prominent Verticality: Agents MUST be at different heights. Use the environment—perched on ledges, leaning against high pillars, or standing on elevated terrain.
+            - Dynamic Poses: No flat standing. Poses should be "ready for action"—high tension, signature weapons drawn, perhaps using an ability as a light source.
+            - Perspective: Use Foreground, Midground, and Background layering to create depth.
+            
+            Format for each:
+            Agent [X] ([Name]), played by [Player Name]: [1-sentence epic pose that utilizes vertical map geometry]
           `;
           
           emotionalBeats = await session.prompt(promptInput);
