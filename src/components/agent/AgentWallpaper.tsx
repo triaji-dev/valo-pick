@@ -133,9 +133,10 @@ interface AgentWallpaperProps {
   agents: (Agent | null)[];
   isRolling?: boolean;
   isRestoring?: boolean;
+  playerNames?: string[];
 }
 
-export default function AgentWallpaper({ agents, isRolling = false, isRestoring = false }: AgentWallpaperProps) {
+export default function AgentWallpaper({ agents, isRolling = false, isRestoring = false, playerNames = [] }: AgentWallpaperProps) {
   const wallpaperRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState(() => THEMES[Math.floor(Math.random() * THEMES.length)]);
   const [pattern, setPattern] = useState(() => PATTERNS[Math.floor(Math.random() * PATTERNS.length)]);
@@ -191,7 +192,7 @@ export default function AgentWallpaper({ agents, isRolling = false, isRestoring 
     const centerIndex = (total - 1) / 2;
     const dist = Math.abs(centerIndex - index);
     const zIndex = Math.round(20 - (dist * 5));
-    const scale = 1.3 - (dist * 0.15); 
+    const scale = 1.3 - (dist * 0.05); 
     const opacity = 1 - (dist * 0.05);
     
     let offsetPercent = 0;
@@ -309,14 +310,23 @@ export default function AgentWallpaper({ agents, isRolling = false, isRestoring 
                                   className="absolute bottom-0 w-[40%] md:w-[40%] transition-all duration-500 origin-bottom"
                                   style={style}
                               >
-                                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center opacity-0 group-hover:opacity-100 transition-all  duration-500">
+                                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center ">
+                                      {playerNames[idx] && (
+                                          <div className="mb-2">
+                                              <div className="bg-black/50 -skew-x-12 px-4 py-1 inline-block border-l-2 border-white/80">
+                                                  <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white drop-shadow-xl skew-x-12 block">
+                                                      {playerNames[idx]}
+                                                  </span>
+                                              </div>
+                                          </div>
+                                      )}
                                       <h4 
-                                        className="text-white font-black uppercase text-xs md:text-3xl italic tracking-tighter drop-shadow-md whitespace-nowrap"
+                                        className="text-white font-black uppercase text-xs md:text-3xl italic tracking-tighter drop-shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-500"
                                         style={{ textShadow: '0 4px 8px rgba(0,0,0,0.8)' }}
                                       >
                                           {agent.displayName}
                                       </h4>
-                                      <div className="flex items-center justify-center gap-1 text-white/80 drop-shadow-md">
+                                      <div className="flex items-center justify-center gap-1 text-white/80 drop-shadow-md opacity-0 group-hover:opacity-100 transition-all duration-500">
                                            <RoleIcon role={agent.role?.displayName} className="w-4 h-4" />
                                            <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest">{agent.role?.displayName}</span>
                                       </div>

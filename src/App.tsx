@@ -21,8 +21,15 @@ export default function App() {
   const [currentView, setCurrentView] = useState<'agent' | 'weapon' | 'statistics'>('agent');
   const [playerCount, setPlayerCount] = useState(5);
   const [gameMode, setGameMode] = useState<'full' | 'balance'>('full');
-  const [playerNames, setPlayerNames] = useState<string[]>(['', '', '', '', '']);
+  const [playerNames, setPlayerNames] = useState<string[]>(() => {
+    const saved = localStorage.getItem('valo-pick-player-names');
+    return saved ? JSON.parse(saved) : ['', '', '', '', ''];
+  });
   const [isRestoring, setIsRestoring] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('valo-pick-player-names', JSON.stringify(playerNames));
+  }, [playerNames]);
   
   const {
     excludedAgentIds,
@@ -156,7 +163,12 @@ export default function App() {
             />
 
             {((!isRolling && finalizedCount === playerCount) || isRolling || isRestoring) && playerCount > 0 && (
-               <AgentWallpaper agents={rollResults} isRolling={isRolling} isRestoring={isRestoring} />
+               <AgentWallpaper 
+                 agents={rollResults} 
+                 isRolling={isRolling} 
+                 isRestoring={isRestoring}
+                 playerNames={playerNames}
+               />
             )}
 
             {(!isRolling && finalizedCount === playerCount && playerCount > 0) || isRestoring ? (
