@@ -42,19 +42,31 @@ export const generateAgentSelection = (
       }
 
       const pickedAgents: Agent[] = [];
+      const usedAgentIds = new Set<string>();
 
       chosenRoles.forEach(role => {
         const allAgentsInRole = roleBuckets[role];
         if (allAgentsInRole.length > 0) {
-          const validCandidates = allAgentsInRole.filter(a => !excludedAgentIds.has(a.uuid));
+          // Filter out already picked agents AND excluded agents
+          const validCandidates = allAgentsInRole.filter(
+            a => !excludedAgentIds.has(a.uuid) && !usedAgentIds.has(a.uuid)
+          );
 
-          let pick: Agent;
+          let pick: Agent | null = null;
           if (validCandidates.length > 0) {
             pick = validCandidates[Math.floor(Math.random() * validCandidates.length)];
           } else {
-            pick = allAgentsInRole[Math.floor(Math.random() * allAgentsInRole.length)];
+            // Fallback: try any agent not yet used
+            const fallbackCandidates = allAgentsInRole.filter(a => !usedAgentIds.has(a.uuid));
+            if (fallbackCandidates.length > 0) {
+              pick = fallbackCandidates[Math.floor(Math.random() * fallbackCandidates.length)];
+            }
           }
-          pickedAgents.push(pick);
+          
+          if (pick) {
+            pickedAgents.push(pick);
+            usedAgentIds.add(pick.uuid);
+          }
         }
       });
 

@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { X, Lock } from 'lucide-react';
 import type { Agent } from '../../types';
 import RoleIcon from '../ui/RoleIcon';
 
@@ -6,6 +6,7 @@ interface AgentPoolGridProps {
   agents: Agent[];
   loading: boolean;
   excludedAgentIds: Set<string>;
+  lockedAgentIds: Set<string>;
   toggleAgentExclusion: (uuid: string) => void;
   isRolling: boolean;
   poolSize: number;
@@ -16,6 +17,7 @@ export default function AgentPoolGrid({
   agents,
   loading,
   excludedAgentIds,
+  lockedAgentIds,
   toggleAgentExclusion,
   isRolling,
   poolSize,
@@ -45,18 +47,21 @@ export default function AgentPoolGrid({
               .sort((a,b) => a.displayName.localeCompare(b.displayName))
               .map(agent => {
                 const isExcluded = excludedAgentIds.has(agent.uuid);
-                const isAvailable = !isExcluded;
+                const isLocked = lockedAgentIds.has(agent.uuid);
+                const isAvailable = !isExcluded && !isLocked;
 
                 return (
                   <button
                     key={agent.uuid}
-                    onClick={() => !isRolling && toggleAgentExclusion(agent.uuid)}
-                    disabled={isRolling || gameMode === 'balance'}
-                    title={agent.displayName}
+                    onClick={() => !isRolling && !isLocked && toggleAgentExclusion(agent.uuid)}
+                    disabled={isRolling || gameMode === 'balance' || isLocked}
+                    title={isLocked ? `${agent.displayName} (Locked)` : agent.displayName}
                     className={`relative aspect-square rounded overflow-hidden border transition-all group ${
-                      isAvailable 
-                        ? 'border-gray-600 opacity-100 hover:border-[#FF4655]' 
-                        : 'border-gray-800 opacity-30 grayscale'
+                      isLocked
+                        ? 'border-emerald-500 opacity-80 cursor-not-allowed'
+                        : isAvailable 
+                          ? 'border-gray-600 opacity-100 hover:border-[#FF4655]' 
+                          : 'border-gray-800 opacity-30 grayscale'
                     }`}
                   >
                     <img 
@@ -64,7 +69,12 @@ export default function AgentPoolGrid({
                       alt={agent.displayName}
                       className="w-full h-full object-cover transition-transform group-hover:scale-110" 
                     />
-                    {isExcluded && (
+                    {isLocked && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-emerald-900/60">
+                        <Lock className="text-emerald-400 w-5 h-5" />
+                      </div>
+                    )}
+                    {isExcluded && !isLocked && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                         <X className="text-red-500 w-8 h-8" />
                       </div>

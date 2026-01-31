@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { PickLog } from './lib/api';
+import type { Agent } from './types';
 import Header from './components/layout/Header';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -26,6 +27,9 @@ export default function App() {
     return saved ? JSON.parse(saved) : ['', '', '', '', ''];
   });
   const [isRestoring, setIsRestoring] = useState(false);
+  const [lockedAgentIndices, setLockedAgentIndices] = useState<Set<number>>(new Set());
+  const [bannedAgentIds, setBannedAgentIds] = useState<Set<string>>(new Set());
+  const [rerollingIndex, setRerollingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     localStorage.setItem('valo-pick-player-names', JSON.stringify(playerNames));
@@ -73,6 +77,92 @@ export default function App() {
     setPlayerNames(newNames);
   };
 
+  const handleToggleLock = (index: number) => {
+    setLockedAgentIndices(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const handleRerollAgent = (index: number) => {
+    if (lockedAgentIndices.has(index) || rerollingIndex !== null) return;
+    
+    // Show reroll animation
+    setRerollingIndex(index);
+    
+    const effectivePool = gameMode === 'balance' ? agents : pool;
+    const usedAgentIds = new Set<string>();
+    rollResults.forEach((a, i) => {
+      if (a && i !== index) usedAgentIds.add(a.uuid);
+    });
+    
+    const availableAgents = effectivePool.filter(
+      a => !usedAgentIds.has(a.uuid) && !bannedAgentIds.has(a.uuid)
+    );
+    
+    // Shuffle animation
+    let shuffleCount = 0;
+    const shuffleInterval = setInterval(() => {
+      if (shuffleCount < 8 && availableAgents.length > 0) {
+        const randomAgent = availableAgents[Math.floor(Math.random() * availableAgents.length)];
+        setRollResults(prev => {
+          const next = [...prev];
+          next[index] = randomAgent;
+          return next;
+        });
+        shuffleCount++;
+      } else {
+        clearInterval(shuffleInterval);
+        
+        // Final selection
+        if (availableAgents.length > 0) {
+          const newAgent = availableAgents[Math.floor(Math.random() * availableAgents.length)];
+          setRollResults(prev => {
+            const next = [...prev];
+            next[index] = newAgent;
+            return next;
+          });
+          // Update finalizedCount to include this card
+          const updatedResults = [...rollResults];
+          updatedResults[index] = newAgent;
+          setFinalizedCount(updatedResults.filter(r => r !== null).length);
+        }
+        setRerollingIndex(null);
+      }
+    }, 80);
+  };
+  
+  const handleStartRandomizer = () => {
+    startRandomizer(lockedAgentIndices, bannedAgentIds, rollResults);
+  };
+
+  const handleChangeAgent = (index: number, agent: Agent) => {
+    // Check if agent is already in another card
+    const existingIndex = rollResults.findIndex(
+      (r, i) => r?.uuid === agent.uuid && i !== index
+    );
+    
+    const newResults = [...rollResults];
+    
+    // If agent exists in another card and that card is not locked, clear it
+    if (existingIndex !== -1 && !lockedAgentIndices.has(existingIndex)) {
+      newResults[existingIndex] = null;
+    }
+    
+    // Set the new agent at the target index
+    newResults[index] = agent;
+    setRollResults(newResults);
+    
+    // Update finalized count if needed
+    const newFinalizedCount = newResults.filter(r => r !== null).length;
+    setFinalizedCount(newFinalizedCount);
+  };
+
   const handleRestoreSquad = (log: PickLog) => {
     setIsRestoring(true);
     setCurrentView('agent');
@@ -92,6 +182,8 @@ export default function App() {
   const resetApp = () => {
     resetFilter();
     resetRandomizer();
+    setLockedAgentIndices(new Set());
+    setBannedAgentIds(new Set());
   };
 
   return (
@@ -130,7 +222,7 @@ export default function App() {
                   excludedAgentIds={excludedAgentIds}
                   handleRoleClick={handleRoleClick}
                   isRolling={isRolling}
-                  startRandomizer={startRandomizer}
+                  startRandomizer={handleStartRandomizer}
                   resetApp={resetApp}
                   isValidConfig={gameMode === 'balance' ? true : isValidConfig}
                   loading={loading}
@@ -140,6 +232,11 @@ export default function App() {
                   agents={agents}
                   loading={loading}
                   excludedAgentIds={excludedAgentIds}
+                  lockedAgentIds={new Set(
+                    Array.from(lockedAgentIndices)
+                      .filter(i => rollResults[i])
+                      .map(i => rollResults[i]!.uuid)
+                  )}
                   toggleAgentExclusion={toggleAgentExclusion}
                   isRolling={isRolling}
                   poolSize={pool.length}
@@ -160,6 +257,13 @@ export default function App() {
               gameMode={gameMode}
               setGameMode={setGameMode}
               resetApp={resetApp}
+              lockedAgentIndices={lockedAgentIndices}
+              bannedAgentIds={bannedAgentIds}
+              onToggleLock={handleToggleLock}
+              onRerollAgent={handleRerollAgent}
+              onChangeAgent={handleChangeAgent}
+              rerollingIndex={rerollingIndex}
+              allAgents={agents}
             />
 
             {((!isRolling && finalizedCount === playerCount) || isRolling || isRestoring) && playerCount > 0 && (

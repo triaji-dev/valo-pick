@@ -35,18 +35,40 @@ export const useRandomizer = ({
     });
   }, [playerCount]);
 
-  const startRandomizer = useCallback(() => {
+  const startRandomizer = useCallback((
+    lockedIndices: Set<number> = new Set(),
+    bannedAgentIds: Set<string> = new Set(),
+    currentResults: (Agent | null)[] = []
+  ) => {
     const effectivePool = gameMode === 'balance' ? agents : pool;
-    if (effectivePool.length < playerCount || isRolling) return;
+    
+    // Count how many non-locked slots need agents
+    const lockedCount = lockedIndices.size;
+    const slotsToFill = playerCount - lockedCount;
+    
+    // Filter out banned agents from pool
+    const availablePool = effectivePool.filter(a => !bannedAgentIds.has(a.uuid));
+    
+    if (availablePool.length < slotsToFill || isRolling) return;
 
     setIsRolling(true);
-    setFinalizedCount(0);
-    setRollResults(Array(playerCount).fill(null));
+    
+    // Preserve locked agents, reset only unlocked slots
+    const initialResults = Array(playerCount).fill(null).map((_, i) => {
+      if (lockedIndices.has(i) && currentResults[i]) {
+        return currentResults[i];
+      }
+      return null;
+    });
+    
+    // Count finalized as locked count initially
+    setFinalizedCount(lockedCount);
+    setRollResults(initialResults);
 
     let revealedLocal = 0; 
 
     rollIntervalRef.current = setInterval(() => {
-      const shuffledAnim = [...effectivePool];
+      const shuffledAnim = [...availablePool];
       for (let i = shuffledAnim.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffledAnim[i], shuffledAnim[j]] = [shuffledAnim[j], shuffledAnim[i]];
@@ -55,46 +77,83 @@ export const useRandomizer = ({
       setRollResults(prev => {
          const next = [...prev];
          if (next.length !== playerCount) {
-             return Array(playerCount).fill(null).map((_, i) => shuffledAnim[i % shuffledAnim.length]);
+             return Array(playerCount).fill(null).map((_, i) => {
+               if (lockedIndices.has(i) && currentResults[i]) return currentResults[i];
+               return shuffledAnim[i % shuffledAnim.length];
+             });
          }
 
+         let animIdx = 0;
          for (let i = 0; i < playerCount; i++) {
+             // Skip locked agents - they keep their value
+             if (lockedIndices.has(i)) continue;
+             
              if (i >= revealedLocal) {
-                 next[i] = shuffledAnim[i % shuffledAnim.length];
+                 next[i] = shuffledAnim[animIdx % shuffledAnim.length];
              }
+             animIdx++;
          }
          return next;
       });
     }, 80); 
 
+    // Get locked agent IDs to exclude from selection
+    const lockedAgentIds = new Set<string>();
+    lockedIndices.forEach(i => {
+      if (currentResults[i]) lockedAgentIds.add(currentResults[i]!.uuid);
+    });
+    
+    // Combine excluded IDs: banned + locked + existing exclusions
+    const combinedExclusions = new Set([...excludedAgentIds, ...bannedAgentIds, ...lockedAgentIds]);
+    
     const finalSelection = generateAgentSelection(
         gameMode, 
-        playerCount, 
-        agents, 
-        gameMode === 'balance' ? new Set() : excludedAgentIds
+        slotsToFill, 
+        agents.filter(a => !lockedAgentIds.has(a.uuid)), 
+        gameMode === 'balance' ? bannedAgentIds : combinedExclusions
     );
 
     setTimeout(() => {
+      let selectionIdx = 0;
+      
       const revealNext = () => {
+        // Find next non-locked slot
+        while (revealedLocal < playerCount && lockedIndices.has(revealedLocal)) {
+          revealedLocal++;
+        }
+        
         if (revealedLocal < playerCount) {
           const currentIndex = revealedLocal; 
 
           setRollResults(prev => {
             const next = [...prev];
-            if (next[currentIndex] !== undefined && finalSelection[currentIndex]) {
-                next[currentIndex] = finalSelection[currentIndex];
+            if (next[currentIndex] !== undefined && finalSelection[selectionIdx]) {
+                next[currentIndex] = finalSelection[selectionIdx];
             }
             return next;
           });
           
           revealedLocal++; 
-          setFinalizedCount(revealedLocal);
+          selectionIdx++;
+          setFinalizedCount(lockedCount + selectionIdx);
           
           revealTimeoutRef.current = setTimeout(revealNext, 600);
         } else {
           if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
           setIsRolling(false);
-          api.logPick(gameMode, finalSelection);
+          
+          // Build final results for logging
+          const finalResults: Agent[] = [];
+          let fIdx = 0;
+          for (let i = 0; i < playerCount; i++) {
+            if (lockedIndices.has(i) && currentResults[i]) {
+              finalResults.push(currentResults[i]!);
+            } else if (finalSelection[fIdx]) {
+              finalResults.push(finalSelection[fIdx]);
+              fIdx++;
+            }
+          }
+          api.logPick(gameMode, finalResults);
         }
       };
 
@@ -117,6 +176,42 @@ export const useRandomizer = ({
     };
   }, []);
 
+  const rerollSingleAgent = useCallback((
+    index: number, 
+    lockedIndices: Set<number>,
+    bannedAgentIds: Set<string>
+  ) => {
+    if (isRolling || lockedIndices.has(index)) return null;
+    
+    const effectivePool = gameMode === 'balance' ? agents : pool;
+    
+    // Get currently used agent IDs (excluding the one being rerolled)
+    const usedAgentIds = new Set<string>();
+    rollResults.forEach((agent, i) => {
+      if (agent && i !== index) {
+        usedAgentIds.add(agent.uuid);
+      }
+    });
+    
+    // Filter pool: exclude used agents and banned agents
+    const availableAgents = effectivePool.filter(
+      agent => !usedAgentIds.has(agent.uuid) && !bannedAgentIds.has(agent.uuid)
+    );
+    
+    if (availableAgents.length === 0) return null;
+    
+    // Pick random agent from available pool
+    const newAgent = availableAgents[Math.floor(Math.random() * availableAgents.length)];
+    
+    setRollResults(prev => {
+      const next = [...prev];
+      next[index] = newAgent;
+      return next;
+    });
+    
+    return newAgent;
+  }, [agents, pool, rollResults, gameMode, isRolling]);
+
   return {
     isRolling,
     setIsRolling, 
@@ -125,6 +220,7 @@ export const useRandomizer = ({
     setFinalizedCount,
     startRandomizer,
     resetRandomizer,
-    setRollResults 
+    setRollResults,
+    rerollSingleAgent
   };
 };
